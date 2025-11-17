@@ -230,6 +230,14 @@ function App() {
   const [currentUser, setCurrentUser] = useState(() => userStore.getCurrent());
   const [showUserAdmin, setShowUserAdmin] = useState(false);
 
+  useEffect(() => {
+  if (currentUser) {
+    document.body.classList.remove("logged-out");
+  } else {
+    document.body.classList.add("logged-out");
+  }
+}, [currentUser]);
+
   // persistance
   useEffect(() => {
     userStore.saveUsers(users);

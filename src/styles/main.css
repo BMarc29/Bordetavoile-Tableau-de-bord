@@ -765,3 +765,7 @@ input.is-invalid, textarea.is-invalid, select.is-invalid{ border-color:#D56B6B !
   padding:6px 0;
   border-bottom:1px solid rgba(255,255,255,.06);
 }
+
+body.logged-out header {
+  display: none !important;
+}
