@@ -50,6 +50,7 @@ function refreshIndicators() {
   const indCount = document.getElementById("indCount");
   const indRelances = document.getElementById("indRelances");
   const indSaved = document.getElementById("indSaved");
+  const indUser = document.getElementById("indUser");  // AJOUT
 
   if (indDate) {
     const now = new Date();

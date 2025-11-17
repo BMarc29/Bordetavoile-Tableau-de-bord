@@ -13,6 +13,302 @@ const openURL = (u) => {
 const norm = (s) => (s || "").toString().trim().toLowerCase();
 const todayISO = () => new Date().toISOString().slice(0,10);
 
+/* ---------- Auth / Utilisateurs (localStorage) ---------- */
+
+const USER_KEY = "btv_users_v1";
+const CURRENT_USER_KEY = "btv_current_user_v1";
+
+const userStore = {
+  loadUsers() {
+    try { return JSON.parse(localStorage.getItem(USER_KEY) || "[]"); } catch { return []; }
+  },
+  saveUsers(users) {
+    try { localStorage.setItem(USER_KEY, JSON.stringify(users || [])); } catch {}
+  },
+  getCurrent() {
+    try { return JSON.parse(localStorage.getItem(CURRENT_USER_KEY) || "null"); } catch { return null; }
+  },
+  setCurrent(user) {
+    try {
+      if (user) localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
+      else localStorage.removeItem(CURRENT_USER_KEY);
+    } catch {}
+  }
+};
+
+/* ---- Écran de connexion ---- */
+function LoginScreen({ users, onLogin, onCreateFirstUser }) {
+  const [mode, setMode] = React.useState(users.length ? "login" : "create");
+  const [email, setEmail] = React.useState(users[0]?.email || "");
+  const [password, setPassword] = React.useState("");
+  const [name, setName] = React.useState("");
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    const mail = (email || "").trim().toLowerCase();
+    const u = users.find(x => (x.email || "").toLowerCase() === mail);
+    if (!u || (u.password || "") !== password) {
+      alert("Identifiants invalides.");
+      return;
+    }
+    onLogin(u);
+  };
+
+  const handleCreate = (e) => {
+    e.preventDefault();
+    if (!name.trim() || !email.trim() || !password.trim()) {
+      alert("Nom, e-mail et mot de passe sont requis.");
+      return;
+    }
+    const u = {
+      id: Date.now(),
+      name: name.trim(),
+      email: email.trim(),
+      role: "admin",           // premier compte = admin
+      password: password       // stocké en clair (outil local)
+    };
+    onCreateFirstUser(u);
+  };
+
+  if (mode === "login") {
+    return (
+      <div className="login-screen">
+        <div className="login-card">
+          <h2>Connexion</h2>
+          <p className="login-context">
+            Sélectionne ton compte et saisis le mot de passe pour accéder à la plateforme.
+          </p>
+          <form onSubmit={handleLogin}>
+            <label>Utilisateur</label>
+            <select
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+            >
+              {users.map(u => (
+                <option key={u.id} value={u.email}>{u.name} ({u.role})</option>
+              ))}
+            </select>
+
+            <label>Mot de passe</label>
+            <input
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="••••••••"
+            />
+
+            <div className="login-actions">
+              <button type="submit" className="btn cta">Se connecter</button>
+            </div>
+          </form>
+
+          {users.length === 0 && (
+            <p style={{marginTop:8, fontSize:13}}>
+              Aucun utilisateur trouvé, tu peux créer le premier compte administrateur.
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // mode "create" pour tout premier compte (si tu veux le forcer)
+  return (
+    <div className="login-screen">
+      <div className="login-card">
+        <h2>Créer le premier compte</h2>
+        <p className="login-context">
+          Aucun utilisateur n'existe encore. Ce compte sera <b>administrateur</b>.
+        </p>
+        <form onSubmit={handleCreate}>
+          <label>Nom</label>
+          <input value={name} onChange={e => setName(e.target.value)} placeholder="Prénom Nom" />
+
+          <label>E-mail</label>
+          <input value={email} onChange={e => setEmail(e.target.value)} placeholder="admin@exemple.fr" />
+
+          <label>Mot de passe</label>
+          <input type="password" value={password} onChange={e => setPassword(e.target.value)} />
+
+          <div className="login-actions">
+            <button type="submit" className="btn cta">Créer le compte</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+/* ---- Modale de gestion des utilisateurs (admin uniquement) ---- */
+function UserAdminModal({ users, onAddUser, onDeleteUser, onClose }) {
+  const [name, setName] = React.useState("");
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [role, setRole] = React.useState("user");
+
+  const handleAdd = (e) => {
+    e.preventDefault();
+    if (!name.trim() || !email.trim() || !password.trim()) {
+      alert("Nom, e-mail et mot de passe sont requis.");
+      return;
+    }
+    onAddUser({
+      id: Date.now(),
+      name: name.trim(),
+      email: email.trim(),
+      role,
+      password
+    });
+    setName(""); setEmail(""); setPassword(""); setRole("user");
+  };
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal solid" onClick={e => e.stopPropagation()}>
+        <div className="modal-head">
+          <h3>Gestion des utilisateurs</h3>
+          <button className="btn small" onClick={onClose}>Fermer</button>
+        </div>
+
+        <h4>Utilisateurs existants</h4>
+        <ul className="user-list">
+          {users.map(u => (
+            <li key={u.id} className="user-item">
+              <div>
+                <strong>{u.name}</strong> — {u.email} ({u.role})
+              </div>
+              <button
+                className="btn small danger"
+                onClick={() => {
+                  if (confirm(`Supprimer l'utilisateur "${u.name}" ?`)) {
+                    onDeleteUser(u.id);
+                  }
+                }}
+              >
+                Supprimer
+              </button>
+            </li>
+          ))}
+          {!users.length && <li>Aucun utilisateur pour le moment.</li>}
+        </ul>
+
+        <hr style={{margin: "12px 0"}} />
+
+        <h4>Ajouter un utilisateur</h4>
+        <form onSubmit={handleAdd} className="modal-grid">
+          <div>
+            <label>Nom</label>
+            <input value={name} onChange={e=>setName(e.target.value)} />
+          </div>
+          <div>
+            <label>E-mail</label>
+            <input value={email} onChange={e=>setEmail(e.target.value)} />
+          </div>
+          <div>
+            <label>Rôle</label>
+            <select value={role} onChange={e=>setRole(e.target.value)}>
+              <option value="user">Utilisateur</option>
+              <option value="admin">Administrateur</option>
+            </select>
+          </div>
+          <div>
+            <label>Mot de passe</label>
+            <input type="password" value={password} onChange={e=>setPassword(e.target.value)} />
+          </div>
+          <div className="modal-actions centered" style={{gridColumn: "1 / -1"}}>
+            <button type="submit" className="btn cta">Ajouter</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+/* ---- App racine : gère login + GestionUI ---- */
+function App() {
+  const [users, setUsers] = useState(() => userStore.loadUsers());
+  const [currentUser, setCurrentUser] = useState(() => userStore.getCurrent());
+  const [showUserAdmin, setShowUserAdmin] = useState(false);
+
+  // persistance
+  useEffect(() => {
+    userStore.saveUsers(users);
+  }, [users]);
+
+  useEffect(() => {
+    userStore.setCurrent(currentUser || null);
+    // met à jour le chip dans le header HTML
+    try {
+      const chip = document.getElementById("indUser");
+      if (chip) {
+        chip.textContent = currentUser
+          ? `👤 ${currentUser.name} (${currentUser.role})`
+          : "Invité (non connecté)";
+      }
+    } catch {}
+  }, [currentUser]);
+
+  const handleLogin = (user) => setCurrentUser(user);
+  const handleCreateFirstUser = (user) => {
+    setUsers([user]);
+    setCurrentUser(user);
+  };
+
+  const handleAddUser = (user) => {
+    setUsers(prev => [...prev, user]);
+  };
+
+  const handleDeleteUser = (id) => {
+    setUsers(prev => prev.filter(u => u.id !== id));
+    setCurrentUser(cur => (cur && cur.id === id ? null : cur));
+  };
+
+  const handleLogout = () => {
+    if (!confirm("Se déconnecter ?")) return;
+    setCurrentUser(null);
+  };
+
+  // Si pas connecté -> écran de connexion plein écran
+  if (!currentUser) {
+    return (
+      <LoginScreen
+        users={users}
+        onLogin={handleLogin}
+        onCreateFirstUser={handleCreateFirstUser}
+      />
+    );
+  }
+
+  // Sinon, on affiche la barre utilisateur + l'app de gestion
+  return (
+    <>
+      <div className="userbar">
+        <span>Connecté : <strong>{currentUser.name}</strong> ({currentUser.role})</span>
+        <div className="userbar-actions">
+          {currentUser.role === "admin" && (
+            <button className="btn small" onClick={() => setShowUserAdmin(true)}>
+              Utilisateurs
+            </button>
+          )}
+          <button className="btn small" onClick={handleLogout}>Se déconnecter</button>
+        </div>
+      </div>
+
+      <GestionUI currentUser={currentUser} />
+
+      {showUserAdmin && (
+        <UserAdminModal
+          users={users}
+          onAddUser={handleAddUser}
+          onDeleteUser={handleDeleteUser}
+          onClose={() => setShowUserAdmin(false)}
+        />
+      )}
+    </>
+  );
+}
+
+
 /* ---------- référentiels ---------- */
 const SECTEURS = {
   "Industrie": ["Agroalimentaire","Naval","Automobile","Aéronautique","Électronique","Textile","Chimie","Pharmaceutique","Métallurgie"],
@@ -1056,7 +1352,7 @@ try { window.GestionUI = GestionUI; } catch {}
       if (!window.React || !window.ReactDOM) throw new Error('React/ReactDOM non chargés');
       console.log('[BTV] Tentative de montage React…');
       const root = ReactDOM.createRoot(el);
-      root.render(React.createElement(GestionUI));
+      root.render(React.createElement(App));   // <== ici
       el.__hasApp = true;
       console.log('[BTV] React monté');
       window.dispatchEvent(new CustomEvent('btv:ui-mounted'));
