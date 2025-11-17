@@ -74,6 +74,11 @@ function LoginScreen({ users, onLogin, onCreateFirstUser }) {
     return (
       <div className="login-screen">
         <div className="login-card">
+          <img
+          src="./build/logo.png"
+          alt="Borde Ta Voile"
+          className="login-boat"
+        />
           <h2>Connexion</h2>
           <p className="login-context">
             Sélectionne ton compte et saisis le mot de passe pour accéder à la plateforme.
@@ -116,6 +121,11 @@ function LoginScreen({ users, onLogin, onCreateFirstUser }) {
   return (
     <div className="login-screen">
       <div className="login-card">
+        <img
+          src="./build/logo.png"
+          alt="Borde Ta Voile"
+          className="login-boat"
+        />
         <h2>Créer le premier compte</h2>
         <p className="login-context">
           Aucun utilisateur n'existe encore. Ce compte sera <b>administrateur</b>.
