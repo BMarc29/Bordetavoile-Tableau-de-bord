@@ -428,3 +428,146 @@ input.is-invalid, textarea.is-invalid, select.is-invalid{ border-color:#D56B6B !
   cursor:pointer;
 }
 .dd-item:hover{ background:rgba(255,255,255,.08); }
+
+/* ===========================
+   RESPONSIVE (tablette + mobile)
+   =========================== */
+
+/* Tablettes + petits laptops */
+@media (max-width: 900px) {
+  /* Grid principale : déjà en 1 colonne, on réduit juste les marges */
+  .app-grid{
+    padding: 10px 10px 90px;
+    gap: 10px;
+  }
+
+  .card-body{
+    padding: 10px 12px 12px;
+  }
+
+  .resume-row{
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .progress-wrap{
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+/* Smartphones en mode portrait */
+@media (max-width: 600px) {
+
+  html, body{
+    font-size: 14px;
+  }
+
+  /* Header plus compact */
+  .header-bar{
+    padding: 10px 12px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .brand-sub{
+    display: none; /* on gagne de la place */
+  }
+  .header-actions{
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  /* Cartes plus "denses" */
+  .card-header{
+    padding: 10px 12px;
+  }
+  .card-title{
+    font-size: 1rem;
+  }
+  .card-body{
+    padding: 10px 12px 12px;
+  }
+
+  /* Les colonnes 2-col ⇒ 1-col */
+  .cols-2{
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  /* Range intérêt : tout sur une colonne pour éviter le squeeze */
+  .interest-row{
+    grid-template-columns: 1fr;
+    align-items: flex-start;
+  }
+  .interest-range{
+    margin-top: 4px;
+  }
+
+  /* Filtres timeline : pile verticale */
+  .tl-controls{
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .tl-controls select,
+  .tl-controls label{
+    width: 100%;
+  }
+
+  /* Contacts : header encore plus compact */
+  .right-under .card-header{
+    padding: 6px 8px !important;
+  }
+
+  /* Barre d’action en bas : boutons empilés */
+  .fixed-actionbar{
+    left: 8px;
+    right: 8px;
+    bottom: 10px;
+    padding: 8px 10px;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .fixed-actionbar .btn{
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+/* Très petits écrans (anciens téléphones / mode paysage serré) */
+@media (max-width: 420px) {
+
+  .app-grid{
+    padding: 6px 6px 90px;
+    gap: 8px;
+  }
+
+  /* Tableau : scroll horizontal au lieu de tout écraser */
+  .table-wrap{
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .table{
+    min-width: 640px;          /* taille "logique" pour garder les colonnes lisibles */
+  }
+  .table th,
+  .table td{
+    padding: 6px 4px;
+    font-size: 0.8rem;
+  }
+
+  /* Timeline un peu plus compacte */
+  .timeline-card{
+    min-width: 200px;
+    padding: 8px;
+  }
+
+  /* Modales : bord à bord */
+  .modal,
+  .calendar-modal{
+    width: 100%;
+    max-width: 100%;
+    border-radius: 0;
+  }
+}
