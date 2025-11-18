@@ -1,7 +1,120 @@
+import { LoginScreen } from "../../renderer";
+
 /* ==== src/components/GestionUI.jsx (V2.2 – Export CSV + filtre par taille) ==== */
 const { useState, useEffect, useMemo } = React;
 
 function useIsMobile() {
+  /* ---------- Supabase (auth utilisateurs) ---------- */
+const supabase = window.supabaseClient;
+
+const userApi = {
+  async loadUsers() {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      console.error("loadUsers error", error);
+      return [];
+    }
+    return data || [];
+  },
+
+  async registerUser({ name, email, password }) {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+    if (error) throw error;
+    const authUser = data.user;
+
+    const { error: pError } = await supabase.from("profiles").insert({
+      id: authUser.id,
+      email,
+      name,
+      role: "user",
+      status: "pending",
+    });
+    if (pError) throw pError;
+    return authUser;
+  },
+
+  async login({ email, password }) {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) throw error;
+    const authUser = data.user;
+
+    const { data: profile, error: pError } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", authUser.id)
+      .single();
+
+    if (pError) throw pError;
+    return profile;
+  },
+
+  async getCurrentProfile() {
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data.user) return null;
+
+    const { data: profile, error: pError } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", data.user.id)
+      .single();
+
+    if (pError) return null;
+    return profile;
+  },
+
+  async logout() {
+    await supabase.auth.signOut();
+  },
+
+  async updateUser(user) {
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+      })
+      .eq("id", user.id);
+    if (error) throw error;
+  },
+
+  async deleteUser(id) {
+    const { error } = await supabase.from("profiles").delete().eq("id", id);
+    if (error) throw error;
+  },
+
+  async addUserAdmin({ name, email, password, role }) {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+    if (error) throw error;
+    const authUser = data.user;
+
+    const { error: pError } = await supabase.from("profiles").insert({
+      id: authUser.id,
+      email,
+      name,
+      role,
+      status: "active",
+    });
+    if (pError) throw pError;
+
+    return authUser;
+  },
+};
+
   const [isMobile, setIsMobile] = useState(
     typeof window !== "undefined"
       ? window.matchMedia("(max-width: 700px)").matches
@@ -37,222 +150,6 @@ const openURL = (u) => {
 const norm = (s) => (s || "").toString().trim().toLowerCase();
 const todayISO = () => new Date().toISOString().slice(0,10);
 
-/* ---------- Auth / Utilisateurs (localStorage) ---------- */
-
-const USER_KEY = "btv_users_v1";
-const CURRENT_USER_KEY = "btv_current_user_v1";
-
-const userStore = {
-  loadUsers() {
-    try {
-      const raw = JSON.parse(localStorage.getItem(USER_KEY) || "[]");
-      // on garantit un statut (par défaut = "active" pour les anciens comptes)
-      return (raw || []).map(u => ({
-        status: "active",
-        ...u,
-        status: u.status || "active"
-      }));
-    } catch {
-      return [];
-    }
-  },
-  saveUsers(users) {
-    try { localStorage.setItem(USER_KEY, JSON.stringify(users || [])); } catch {}
-  },
-  getCurrent() {
-    try { return JSON.parse(localStorage.getItem(CURRENT_USER_KEY) || "null"); } catch { return null; }
-  },
-  setCurrent(user) {
-    try {
-      if (user) localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
-      else localStorage.removeItem(CURRENT_USER_KEY);
-    } catch {}
-  }
-};
-
-
-/* ---- Écran de connexion ---- */
-function LoginScreen({ users, onLogin, onCreateFirstUser, onRegisterRequest }) {
-  const hasUsers = users.length > 0;
-
-  // login / register uniquement quand il y a déjà au moins un compte
-  const [mode, setMode] = React.useState(hasUsers ? "login" : "createAdmin");
-  const [email, setEmail] = React.useState(users[0]?.email || "");
-  const [password, setPassword] = React.useState("");
-  const [name, setName] = React.useState("");
-
-  /* ----- Connexion ----- */
-  const handleLogin = (e) => {
-    e.preventDefault();
-    const mail = (email || "").trim().toLowerCase();
-    const u = users.find(x => (x.email || "").toLowerCase() === mail);
-
-    if (!u || (u.password || "") !== password) {
-      alert("Identifiants invalides.");
-      return;
-    }
-
-    // si le compte n'est pas encore validé
-    if (u.status && u.status !== "active") {
-      if (u.status === "pending") {
-        alert("Ton compte est en attente de validation par un administrateur.");
-      } else {
-        alert("Ce compte est désactivé. Contacte l’administrateur.");
-      }
-      return;
-    }
-
-    onLogin(u);
-  };
-
-  /* ----- Création du tout premier admin ----- */
-  const handleCreateFirst = (e) => {
-    e.preventDefault();
-    if (!name.trim() || !email.trim() || !password.trim()) {
-      alert("Nom, e-mail et mot de passe sont requis.");
-      return;
-    }
-    const u = {
-      id: Date.now(),
-      name: name.trim(),
-      email: email.trim(),
-      role: "admin",
-      password,
-      status: "active"        // premier compte = admin actif
-    };
-    onCreateFirstUser(u);
-  };
-
-  /* ----- Demande de nouveau compte (utilisateur standard) ----- */
-  const handleRegister = (e) => {
-    e.preventDefault();
-    if (!name.trim() || !email.trim() || !password.trim()) {
-      alert("Nom, e-mail et mot de passe sont requis.");
-      return;
-    }
-
-    const mail = email.trim().toLowerCase();
-    if (users.some(u => (u.email || "").toLowerCase() === mail)) {
-      alert("Un compte existe déjà avec cet e-mail.");
-      return;
-    }
-
-    const u = {
-      id: Date.now(),
-      name: name.trim(),
-      email: email.trim(),
-      role: "user",
-      password,
-      status: "pending"       // ➜ devra être validé par un admin
-    };
-
-    onRegisterRequest(u);
-
-    alert("✅ Demande envoyée. Un administrateur doit valider ton compte avant que tu puisses te connecter.");
-    // on repasse sur l’onglet connexion
-    setMode("login");
-    setPassword("");
-  };
-
-  /* ----- Cas général : il existe déjà au moins un compte ----- */
-  return (
-    <div className="login-screen">
-      <div className="login-card">
-        <img
-          src="./build/logo.png"
-          alt="Borde Ta Voile"
-          className="login-boat"
-        />
-
-        <h2>{mode === "login" ? "Connexion" : "Nouveau compte"}</h2>
-        <p className="login-context">
-          {mode === "login"
-            ? "Sélectionne ton compte et saisis le mot de passe."
-            : "Demande la création d’un compte. Un administrateur devra l’approuver."}
-        </p>
-
-        {/* Onglets Connexion / Nouveau compte */}
-        <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-          <button
-            type="button"
-            className={`btn small${mode === "login" ? " cta" : ""}`}
-            style={{ flex: 1 }}
-            onClick={() => { setMode("login"); setPassword(""); }}
-          >
-            Connexion
-          </button>
-          <button
-            type="button"
-            className={`btn small${mode === "register" ? " cta" : ""}`}
-            style={{ flex: 1 }}
-            onClick={() => { setMode("register"); setPassword(""); }}
-          >
-            Nouveau compte
-          </button>
-        </div>
-
-        {mode === "login" ? (
-          <form onSubmit={handleLogin}>
-            <label>Utilisateur</label>
-            <select
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-            >
-              {users.map(u => (
-                <option key={u.id} value={u.email}>
-                  {u.name} ({u.role})
-                  {u.status === "pending" ? " – en attente" : ""}
-                </option>
-              ))}
-            </select>
-
-            <label>Mot de passe</label>
-            <input
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder="••••••••"
-            />
-
-            <div className="login-actions">
-              <button type="submit" className="btn cta">Se connecter</button>
-            </div>
-          </form>
-        ) : (
-          <form onSubmit={handleRegister}>
-            <label>Nom</label>
-            <input
-              value={name}
-              onChange={e => setName(e.target.value)}
-              placeholder="Prénom Nom"
-            />
-
-            <label>E-mail</label>
-            <input
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="mon.email@exemple.fr"
-            />
-
-            <label>Mot de passe</label>
-            <input
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-            />
-
-            <div className="login-actions">
-              <button type="submit" className="btn cta">
-                Envoyer la demande
-              </button>
-            </div>
-          </form>
-        )}
-      </div>
-    </div>
-  );
-}
-
 /* ---- Modale de gestion des utilisateurs (admin uniquement) ---- */
 function UserAdminModal({ users, onAddUser, onDeleteUser, onUpdateUser, onClose }) {
   const [name, setName] = React.useState("");
@@ -260,21 +157,23 @@ function UserAdminModal({ users, onAddUser, onDeleteUser, onUpdateUser, onClose 
   const [password, setPassword] = React.useState("");
   const [role, setRole] = React.useState("user");
 
-  const handleAdd = (e) => {
+    const handleAdd = (e) => {
     e.preventDefault();
     if (!name.trim() || !email.trim() || !password.trim()) {
       alert("Nom, e-mail et mot de passe sont requis.");
       return;
     }
+    // on laisse la création réelle à App (userApi.addUserAdmin)
     onAddUser({
-      id: Date.now(),
       name: name.trim(),
       email: email.trim(),
       role,
       password,
-      status: "active"   // un admin qui crée un compte le rend actif directement
     });
-    setName(""); setEmail(""); setPassword(""); setRole("user");
+    setName("");
+    setEmail("");
+    setPassword("");
+    setRole("user");
   };
 
   const labelStatus = (u) => {
@@ -303,7 +202,7 @@ function UserAdminModal({ users, onAddUser, onDeleteUser, onUpdateUser, onClose 
                 </span>
               </div>
               <div style={{ display: "flex", gap: 6 }}>
-                { (u.status || "active") === "pending" && (
+                {(u.status || "active") === "pending" && (
                   <button
                     className="btn small"
                     onClick={() => onUpdateUser({ ...u, status: "active" })}
@@ -311,7 +210,8 @@ function UserAdminModal({ users, onAddUser, onDeleteUser, onUpdateUser, onClose 
                     Valider
                   </button>
                 )}
-                { (u.status || "active") === "active" && (
+
+                {(u.status || "active") === "active" && (
                   <button
                     className="btn small"
                     onClick={() => onUpdateUser({ ...u, status: "disabled" })}
@@ -319,7 +219,8 @@ function UserAdminModal({ users, onAddUser, onDeleteUser, onUpdateUser, onClose 
                     Désactiver
                   </button>
                 )}
-                { (u.status || "active") === "disabled" && (
+
+                {(u.status || "active") === "disabled" && (
                   <button
                     className="btn small"
                     onClick={() => onUpdateUser({ ...u, status: "active" })}
@@ -377,17 +278,111 @@ function UserAdminModal({ users, onAddUser, onDeleteUser, onUpdateUser, onClose 
 
 /* ---- App racine : gère login + GestionUI ---- */
 function App() {
-  const [users, setUsers] = useState(() => userStore.loadUsers());
-  const [currentUser, setCurrentUser] = useState(() => userStore.getCurrent());
+  const [users, setUsers] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
   const [showUserAdmin, setShowUserAdmin] = useState(false);
   const isMobile = useIsMobile();
+
+  // Au chargement : profil connecté + liste des users
   useEffect(() => {
-  if (currentUser) {
-    document.body.classList.remove("logged-out");
-  } else {
-    document.body.classList.add("logged-out");
+    (async () => {
+      const profile = await userApi.getCurrentProfile();
+      setCurrentUser(profile || null);
+
+      const list = await userApi.loadUsers();
+      setUsers(list);
+    })();
+  }, []);
+
+  // Classe body.logged-out pour cacher le header quand pas connecté
+  useEffect(() => {
+    if (currentUser) {
+      document.body.classList.remove("logged-out");
+    } else {
+      document.body.classList.add("logged-out");
+    }
+    // mise à jour du chip dans le header HTML
+    try {
+      const chip = document.getElementById("indUser");
+      if (chip) {
+        chip.textContent = currentUser
+          ? `👤 ${currentUser.name} (${currentUser.role})`
+          : "Invité (non connecté)";
+      }
+    } catch {}
+  }, [currentUser]);
+
+  const handleLogin = (userProfile) => {
+    setCurrentUser(userProfile);
+  };
+
+  const handleLogout = async () => {
+    if (!confirm("Se déconnecter ?")) return;
+    await userApi.logout();
+    setCurrentUser(null);
+  };
+
+  const handleUpdateUser = async (user) => {
+    await userApi.updateUser(user);
+    setUsers((prev) => prev.map((u) => (u.id === user.id ? user : u)));
+    if (currentUser && currentUser.id === user.id) {
+      setCurrentUser(user);
+    }
+  };
+
+  const handleAddUser = async ({ name, email, password, role }) => {
+    await userApi.addUserAdmin({ name, email, password, role });
+    const list = await userApi.loadUsers();
+    setUsers(list);
+  };
+
+  const handleDeleteUser = async (id) => {
+    if (!confirm("Supprimer cet utilisateur ?")) return;
+    await userApi.deleteUser(id);
+    setUsers((prev) => prev.filter((u) => u.id !== id));
+    if (currentUser && currentUser.id === id) {
+      setCurrentUser(null);
+    }
+  };
+
+  // Si pas connecté -> écran de connexion plein écran
+  if (!currentUser) {
+    return <LoginScreen onLogin={handleLogin} />;
   }
-}, [currentUser]);
+
+  // Sinon, on affiche la barre utilisateur + l'app de gestion
+  return (
+    <>
+      <div className="userbar">
+        <span>
+          Connecté : <strong>{currentUser.name}</strong> ({currentUser.role})
+        </span>
+        <div className="userbar-actions">
+          {currentUser.role === "admin" && (
+            <button className="btn small" onClick={() => setShowUserAdmin(true)}>
+              Utilisateurs
+            </button>
+          )}
+          <button className="btn small" onClick={handleLogout}>
+            Se déconnecter
+          </button>
+        </div>
+      </div>
+
+      <GestionUI currentUser={currentUser} isMobile={isMobile} />
+
+      {showUserAdmin && (
+        <UserAdminModal
+          users={users}
+          onAddUser={handleAddUser}
+          onDeleteUser={handleDeleteUser}
+          onUpdateUser={handleUpdateUser}
+          onClose={() => setShowUserAdmin(false)}
+        />
+      )}
+    </>
+  );
+}
 
   // persistance
   useEffect(() => {
@@ -450,25 +445,31 @@ function App() {
     );
   }
 
-
   // Sinon, on affiche la barre utilisateur + l'app de gestion
   return (
     <>
       <div className="userbar">
-        <span>Connecté : <strong>{currentUser.name}</strong> ({currentUser.role})</span>
+        <span>
+          Connecté : <strong>{currentUser.name}</strong> ({currentUser.role})
+        </span>
         <div className="userbar-actions">
           {currentUser.role === "admin" && (
-            <button className="btn small" onClick={() => setShowUserAdmin(true)}>
+            <button
+              className="btn small"
+              onClick={() => setShowUserAdmin(true)}
+            >
               Utilisateurs
             </button>
           )}
-          <button className="btn small" onClick={handleLogout}>Se déconnecter</button>
+          <button className="btn small" onClick={handleLogout}>
+            Se déconnecter
+          </button>
         </div>
       </div>
 
       <GestionUI currentUser={currentUser} isMobile={isMobile} />
 
-            {showUserAdmin && (
+      {showUserAdmin && (
         <UserAdminModal
           users={users}
           onAddUser={handleAddUser}
@@ -479,7 +480,6 @@ function App() {
       )}
     </>
   );
-}
 
 /* ---------- référentiels ---------- */
 const SECTEURS = {

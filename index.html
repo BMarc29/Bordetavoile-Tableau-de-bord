@@ -2,14 +2,32 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
-  <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' https://unpkg.com; connect-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;" />
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net; connect-src 'self' https://zcvonimywdisajxgjcec.supabase.co https://*.supabase.co https://*.supabase.net; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;"
+  />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>BORDE TA VOILE — Gestion des entreprises</title>
+
   <link rel="stylesheet" href="./src/styles/main.css" />
+
+  <!-- React + Babel -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Supabase client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = "https://zcvonimywdisajxgjcec.supabase.co";
+    const SUPABASE_ANON_KEY =
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpjdm9uaW15d2Rpc2FqeGdqY2VjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM0NzY4MTMsImV4cCI6MjA3OTA1MjgxM30.0PqY59iyVI7-oaj1xVPKky66744O8zw804QhUddnR38";
+
+    // Client global pour toute ton app (GestionUI.jsx, etc.)
+    window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  </script>
 </head>
+
 <body>
   <!-- Bandeau -->
   <header class="header-bar">

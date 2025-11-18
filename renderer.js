@@ -449,4 +449,173 @@ document.addEventListener("DOMContentLoaded", () => {
   } catch (e) {
     console.error(e);
   }
-});
+});/* ---- Écran de connexion (Supabase) ---- */
+export function LoginScreen({ onLogin }) {
+  const [mode, setMode] = React.useState("login"); // login | register
+  const [users, setUsers] = React.useState([]);
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [name, setName] = React.useState("");
+  const [loading, setLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    (async () => {
+      const list = await userApi.loadUsers();
+      setUsers(list);
+      if (list.length) setEmail(list[0].email);
+    })();
+  }, []);
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      const profile = await userApi.login({ email, password });
+
+      if (profile.status === "pending") {
+        alert("Ton compte est en attente de validation par un administrateur.");
+        return;
+      }
+      if (profile.status === "disabled") {
+        alert("Ce compte est désactivé. Contacte l’administrateur.");
+        return;
+      }
+
+      onLogin(profile);
+    } catch (err) {
+      console.error(err);
+      alert("Identifiants invalides ou erreur de connexion.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    if (!name.trim() || !email.trim() || !password.trim()) {
+      alert("Nom, e-mail et mot de passe sont requis.");
+      return;
+    }
+    try {
+      setLoading(true);
+      await userApi.registerUser({
+        name: name.trim(),
+        email: email.trim(),
+        password,
+      });
+      alert("✅ Demande envoyée. Un administrateur doit valider ton compte.");
+      setMode("login");
+      setPassword("");
+
+      const list = await userApi.loadUsers();
+      setUsers(list);
+    } catch (err) {
+      console.error(err);
+      alert("Erreur lors de la création du compte.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="login-screen">
+      <div className="login-card">
+        <img
+          src="./build/logo.png"
+          alt="Borde Ta Voile"
+          className="login-boat" />
+
+        <h2>{mode === "login" ? "Connexion" : "Nouveau compte"}</h2>
+        <p className="login-context">
+          {mode === "login"
+            ? "Sélectionne ton compte et saisis le mot de passe."
+            : "Demande la création d’un compte. Un administrateur devra l’approuver."}
+        </p>
+
+        {/* Onglets Connexion / Nouveau compte */}
+        <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+          <button
+            type="button"
+            className={`btn small${mode === "login" ? " cta" : ""}`}
+            style={{ flex: 1 }}
+            onClick={() => {
+              setMode("login");
+              setPassword("");
+            } }
+          >
+            Connexion
+          </button>
+          <button
+            type="button"
+            className={`btn small${mode === "register" ? " cta" : ""}`}
+            style={{ flex: 1 }}
+            onClick={() => {
+              setMode("register");
+              setPassword("");
+            } }
+          >
+            Nouveau compte
+          </button>
+        </div>
+
+        {mode === "login" ? (
+          <form onSubmit={handleLogin}>
+            <label>Utilisateur</label>
+            <select
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            >
+              {users.map((u) => (
+                <option key={u.id} value={u.email}>
+                  {u.name} ({u.role})
+                  {u.status === "pending" ? " – en attente" : ""}
+                </option>
+              ))}
+              {!users.length && <option value="">Aucun compte</option>}
+            </select>
+
+            <label>Mot de passe</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••" />
+
+            <div className="login-actions">
+              <button type="submit" className="btn cta" disabled={loading}>
+                {loading ? "Connexion..." : "Se connecter"}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <form onSubmit={handleRegister}>
+            <label>Nom</label>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Prénom Nom" />
+
+            <label>E-mail</label>
+            <input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="mon.email@exemple.fr" />
+
+            <label>Mot de passe</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)} />
+
+            <div className="login-actions">
+              <button type="submit" className="btn cta" disabled={loading}>
+                {loading ? "Envoi..." : "Envoyer la demande"}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
