@@ -818,3 +818,23 @@ body.logged-out header {
 .mini-agenda iframe{
   display:block;
 }
+
+/* Afficher / cacher selon la taille d’écran */
+.only-desktop { display: block; }
+.only-mobile  { display: none; }
+
+@media (max-width: 600px) {
+  .only-desktop { display: none; }
+  .only-mobile  { display: block; }
+}
+
+@media (max-width: 700px) {
+  .mobile-wrapper {
+    padding: 12px;
+    font-size: 16px;
+  }
+
+  .app-grid {
+    display: none !important; /* Cache la version PC */
+  }
+}

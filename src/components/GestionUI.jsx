@@ -1,6 +1,25 @@
 /* ==== src/components/GestionUI.jsx (V2.2 – Export CSV + filtre par taille) ==== */
 const { useState, useEffect, useMemo } = React;
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined"
+      ? window.matchMedia("(max-width: 700px)").matches
+      : false
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(max-width: 700px)");
+    const handler = (e) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  return isMobile;
+}
+
+
 // URL d’intégration Google Calendar (embed de bordetavoile@gmail.com)
 const G_CAL_EMBED_BASE =
   "https://calendar.google.com/calendar/embed?src=bordetavoile%40gmail.com&ctz=Europe%2FParis";
@@ -361,7 +380,7 @@ function App() {
   const [users, setUsers] = useState(() => userStore.loadUsers());
   const [currentUser, setCurrentUser] = useState(() => userStore.getCurrent());
   const [showUserAdmin, setShowUserAdmin] = useState(false);
-
+  const isMobile = useIsMobile();
   useEffect(() => {
   if (currentUser) {
     document.body.classList.remove("logged-out");
@@ -447,7 +466,7 @@ function App() {
         </div>
       </div>
 
-      <GestionUI currentUser={currentUser} />
+      <GestionUI currentUser={currentUser} isMobile={isMobile} />
 
             {showUserAdmin && (
         <UserAdminModal
@@ -536,6 +555,22 @@ const store = {
 };
 
 /* ---------- composant ---------- */
+function MobileUI({ entreprise, setField }) {
+  return (
+    <div className="mobile-wrapper">
+      <h2>📱 Mode mobile</h2>
+      <p>Ici tu peux construire une interface simplifiée pour téléphone.</p>
+
+      <label>Nom de l’entreprise</label>
+      <input
+        value={entreprise.nom}
+        onChange={e => setField("nom", e.target.value)}
+      />
+
+      {/* Ajoute ici les blocs que tu veux afficher sur mobile */}
+    </div>
+  );
+}
 function GestionUI() {
   const empty = {
     id:null,
@@ -1179,6 +1214,10 @@ const openGCalRdv = () => {
 
 
   /* ---------- render ---------- */
+  if (isMobile) {
+  return <MobileUI entreprise={entreprise} setField={setField} />;
+}
+
   return (
     <div className="app-grid">
       {/* LEFT */}
