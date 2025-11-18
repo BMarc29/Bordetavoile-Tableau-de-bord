@@ -11,7 +11,7 @@
 
   <link rel="stylesheet" href="./src/styles/main.css" />
 
-  <!-- React + Babel -->
+  <!-- React + ReactDOM + Babel -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -23,7 +23,7 @@
     const SUPABASE_ANON_KEY =
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpjdm9uaW15d2Rpc2FqeGdqY2VjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM0NzY4MTMsImV4cCI6MjA3OTA1MjgxM30.0PqY59iyVI7-oaj1xVPKky66744O8zw804QhUddnR38";
 
-    // Client global pour toute ton app (GestionUI.jsx, etc.)
+    // Client global utilisable dans GestionUI.jsx
     window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   </script>
 </head>
