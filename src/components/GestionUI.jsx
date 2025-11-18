@@ -278,120 +278,28 @@ function UserAdminModal({ users, onAddUser, onDeleteUser, onUpdateUser, onClose 
 
 /* ---- App racine : gère login + GestionUI ---- */
 function App() {
-  const [users, setUsers] = useState([]);
-  const [currentUser, setCurrentUser] = useState(null);
+  const [users, setUsers] = useState(() => userStore.loadUsers());
+  const [currentUser, setCurrentUser] = useState(() => userStore.getCurrent());
   const [showUserAdmin, setShowUserAdmin] = useState(false);
   const isMobile = useIsMobile();
 
-  // Au chargement : profil connecté + liste des users
-  useEffect(() => {
-    (async () => {
-      const profile = await userApi.getCurrentProfile();
-      setCurrentUser(profile || null);
-
-      const list = await userApi.loadUsers();
-      setUsers(list);
-    })();
-  }, []);
-
-  // Classe body.logged-out pour cacher le header quand pas connecté
+  // Ajouter / enlever la classe logged-out sur le <body>
   useEffect(() => {
     if (currentUser) {
       document.body.classList.remove("logged-out");
     } else {
       document.body.classList.add("logged-out");
     }
-    // mise à jour du chip dans le header HTML
-    try {
-      const chip = document.getElementById("indUser");
-      if (chip) {
-        chip.textContent = currentUser
-          ? `👤 ${currentUser.name} (${currentUser.role})`
-          : "Invité (non connecté)";
-      }
-    } catch {}
   }, [currentUser]);
 
-  const handleLogin = (userProfile) => {
-    setCurrentUser(userProfile);
-  };
-
-  const handleLogout = async () => {
-    if (!confirm("Se déconnecter ?")) return;
-    await userApi.logout();
-    setCurrentUser(null);
-  };
-
-  const handleUpdateUser = async (user) => {
-    await userApi.updateUser(user);
-    setUsers((prev) => prev.map((u) => (u.id === user.id ? user : u)));
-    if (currentUser && currentUser.id === user.id) {
-      setCurrentUser(user);
-    }
-  };
-
-  const handleAddUser = async ({ name, email, password, role }) => {
-    await userApi.addUserAdmin({ name, email, password, role });
-    const list = await userApi.loadUsers();
-    setUsers(list);
-  };
-
-  const handleDeleteUser = async (id) => {
-    if (!confirm("Supprimer cet utilisateur ?")) return;
-    await userApi.deleteUser(id);
-    setUsers((prev) => prev.filter((u) => u.id !== id));
-    if (currentUser && currentUser.id === id) {
-      setCurrentUser(null);
-    }
-  };
-
-  // Si pas connecté -> écran de connexion plein écran
-  if (!currentUser) {
-    return <LoginScreen onLogin={handleLogin} />;
-  }
-
-  // Sinon, on affiche la barre utilisateur + l'app de gestion
-  return (
-    <>
-      <div className="userbar">
-        <span>
-          Connecté : <strong>{currentUser.name}</strong> ({currentUser.role})
-        </span>
-        <div className="userbar-actions">
-          {currentUser.role === "admin" && (
-            <button className="btn small" onClick={() => setShowUserAdmin(true)}>
-              Utilisateurs
-            </button>
-          )}
-          <button className="btn small" onClick={handleLogout}>
-            Se déconnecter
-          </button>
-        </div>
-      </div>
-
-      <GestionUI currentUser={currentUser} isMobile={isMobile} />
-
-      {showUserAdmin && (
-        <UserAdminModal
-          users={users}
-          onAddUser={handleAddUser}
-          onDeleteUser={handleDeleteUser}
-          onUpdateUser={handleUpdateUser}
-          onClose={() => setShowUserAdmin(false)}
-        />
-      )}
-    </>
-  );
-}
-
-  // persistance
+  // Sauvegarde des utilisateurs dans le localStorage
   useEffect(() => {
     userStore.saveUsers(users);
   }, [users]);
 
+  // Sauvegarde de l'utilisateur courant + mise à jour du chip dans le header
   useEffect(() => {
     userStore.setCurrent(currentUser || null);
-    // met à jour le chip dans le header HTML
     try {
       const chip = document.getElementById("indUser");
       if (chip) {
@@ -402,30 +310,32 @@ function App() {
     } catch {}
   }, [currentUser]);
 
-  const handleLogin = (user) => setCurrentUser(user);
+  const handleLogin = (user) => {
+    setCurrentUser(user);
+  };
+
   const handleCreateFirstUser = (user) => {
     setUsers([user]);
     setCurrentUser(user);
   };
-    const handleRegisterRequest = (user) => {
+
+  const handleRegisterRequest = (user) => {
     // simple ajout, le compte reste non connecté et en "pending"
-    setUsers(prev => [...prev, user]);
+    setUsers((prev) => [...prev, user]);
   };
 
   const handleUpdateUser = (user) => {
-    setUsers(prev => prev.map(u => u.id === user.id ? user : u));
-    // si c'est l'utilisateur actuellement connecté, on met à jour aussi
-    setCurrentUser(cur => (cur && cur.id === user.id ? user : cur));
+    setUsers((prev) => prev.map((u) => (u.id === user.id ? user : u)));
+    setCurrentUser((cur) => (cur && cur.id === user.id ? user : cur));
   };
 
-
   const handleAddUser = (user) => {
-    setUsers(prev => [...prev, user]);
+    setUsers((prev) => [...prev, user]);
   };
 
   const handleDeleteUser = (id) => {
-    setUsers(prev => prev.filter(u => u.id !== id));
-    setCurrentUser(cur => (cur && cur.id === id ? null : cur));
+    setUsers((prev) => prev.filter((u) => u.id !== id));
+    setCurrentUser((cur) => (cur && cur.id === id ? null : cur));
   };
 
   const handleLogout = () => {
@@ -480,6 +390,7 @@ function App() {
       )}
     </>
   );
+}
 
 /* ---------- référentiels ---------- */
 const SECTEURS = {
