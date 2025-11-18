@@ -571,7 +571,7 @@ function MobileUI({ entreprise, setField }) {
     </div>
   );
 }
-function GestionUI() {
+function GestionUI({ isMobile }) {
   const empty = {
     id:null,
     nom:"", adresse:"", codePostal:"", ville:"", distance:"",
