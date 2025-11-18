@@ -777,3 +777,24 @@ body.logged-out header {
   height: auto;
   filter: drop-shadow(0 6px 10px rgba(0,0,0,.35));
 }
+
+.timeline-card .tl-footer {
+  margin-top: 8px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.timeline-card .tl-trash {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 14px;
+  opacity: 0.7;
+  padding: 0 2px 0 8px;
+}
+
+.timeline-card .tl-trash:hover {
+  opacity: 1;
+  transform: translateY(-1px);
+}

@@ -361,8 +361,27 @@ const ACTION_DELAYS = {
   "Autre > Personnalisée": 20
 };
 
+// Journal de bord : moyens & types d'action
+const JB_CHANNELS = [
+  "Courrier",
+  "Mail",
+  "Téléphone",
+  "SMS",
+  "LinkedIn",
+  "Visio",
+  "Sur site",
+  "Devis"
+];
+
+const JB_ACTIONS = [
+  "Envoi",
+  "Relance",
+  "Suivi",
+  "Info"
+];
+
 /* Progress par statut */
-const STAT_STEPS = ["En prospection","En attente","RDV planifié","Devis envoyé","Gagné","Perdu"];
+const STAT_STEPS = ["En prospection","En cours","RDV planifié","Devis envoyé","Gagné","Perdu"];
 const STAT_PROGRESS = (s)=>{
   const i = Math.max(0, STAT_STEPS.indexOf(s));
   return Math.round((i/(STAT_STEPS.length-1))*100);
@@ -430,14 +449,16 @@ function GestionUI() {
   /* Timeline controls */
   const [actionCat, setActionCat] = useState(store.getLastAction().cat || "");
   const [actionSub, setActionSub] = useState(store.getLastAction().sub || "");
-  const [actionResult, setActionResult] = useState("En attente");
+  const [actionResult, setActionResult] = useState("En cours");
   const [actionNote, setActionNote] = useState(""); // se vide auto après ajout
-
+  const [jbChannel, setJbChannel] = useState("Mail");
+  const [jbAction, setJbAction] = useState("Relance");
+  const [showActionDetails, setShowActionDetails] = useState(false);
   const [tlFilterType, setTlFilterType] = useState("");
   const [tlFilterResult, setTlFilterResult] = useState("");
   const [tlOrder, setTlOrder] = useState("desc");
   const [tlCondensed, setTlCondensed] = useState(false);
-  const [tlHideOld, setTlHideOld] = useState(true); // > 90j
+  const [tlHideOld, setTlHideOld] = useState(false); // > 90j
 
   /* Filtres liste entreprises */
   const [filterCat, setFilterCat] = useState("");
@@ -699,25 +720,77 @@ function GestionUI() {
     setShowContactModal(false);
   };
 
-  /* ---------- Actions / timeline ---------- */
-  const addActivity = ({ type, subType = "", result = "En attente", note = "" }) => {
+   /* ---------- Actions / timeline ---------- */
+const addActivity = ({ type, subType = "", result = "En cours", note = "" }) => {
     const nowISO = new Date().toISOString();
     setEntreprise(prev => {
       const acts = [{ id: Date.now(), dateISO: nowISO, type, subType, result, note }, ...(prev.activities||[])];
       const key = [type, subType].filter(Boolean).join(" > ");
       const nextDays = ACTION_DELAYS[key] ?? 20;
       const nextISO = new Date(Date.now()+ nextDays*864e5).toISOString().slice(0,10);
+
       let statut = prev.statut || "En prospection";
       if (type === "Rendez-vous") statut = "RDV planifié";
       if (type === "Envoi" && subType === "Devis") statut = "Devis envoyé";
-      if (type === "Relance") statut = "En attente";
-      return { ...prev, activities: acts, dateDernier: nowISO.slice(0,10), dateProchaine: prev.dateProchaine || nextISO, statut };
+      if (type === "Relance") statut = "En cours"; // ✅ nouveau libellé
+
+      return {
+        ...prev,
+        activities: acts,
+        dateDernier: nowISO.slice(0,10),
+        dateProchaine: prev.dateProchaine || nextISO,
+        statut
+      };
     });
+
     // préférences + feedback
     store.setLastAction(type, subType);
-    setActionCat(type); setActionSub(subType);
+    setActionCat(type);
+    setActionSub(subType);
+    setActionResult(result);
     setActionNote(""); // vider automatiquement
     showToast("Action ajoutée ✅");
+  };
+
+  // Journal de bord : transforme (moyen + type) en vraie action
+  const fireJournalEntry = () => {
+    if (!jbChannel || !jbAction) {
+      alert("Choisis un moyen de contact et un type d’action.");
+      return;
+    }
+
+    const channel = jbChannel;
+    const action = jbAction;
+    let type = "Autre";
+    let subType = "";
+
+    if (channel === "Visio" || channel === "Sur site") {
+      type = "Rendez-vous";
+      subType = channel;
+    } else if (channel === "Devis") {
+      type = "Envoi";
+      subType = "Devis";
+    } else if (action === "Envoi") {
+      type = "Envoi";
+      subType = channel;
+    } else if (action === "Relance" || action === "Suivi") {
+      type = "Relance";
+      subType = channel;
+    } else {
+      type = "Autre";
+      subType = channel;
+    }
+
+    const note = `${action} · ${channel}`;
+    addActivity({ type, subType, result: "En attente", note });
+  };
+
+  // Supprimer une action de la timeline
+  const deleteActivity = (id) => {
+    setEntreprise(prev => ({
+      ...prev,
+      activities: (prev.activities || []).filter(a => a.id !== id)
+    }));
   };
 
   /* Résumé du suivi (comptes) */
@@ -926,10 +999,17 @@ function GestionUI() {
       <section className="right">
         <div className="card fill">
           <div className="card-header">
-            <h2 className="card-title">Suivi du démarchage</h2>
-            <div className="card-header-actions">
-              <button className="btn small" onClick={()=>setShowCalendar(true)}>📅 Calendrier</button>
-              <button className="btn small" onClick={relancerAuj}>↻ Relancer aujourd’hui</button>
+                <div className="card-header">
+              <h2 className="card-title">
+                Suivi du démarchage
+                <span className="badge pill" style={{ marginLeft: 8 }}>
+                  {entreprise.statut || "En prospection"}
+                </span>
+              </h2>
+              <div className="card-header-actions">
+                <button className="btn small" onClick={()=>setShowCalendar(true)}>📅 Calendrier</button>
+                <button className="btn small" onClick={relancerAuj}>↻ Relancer aujourd’hui</button>
+              </div>
             </div>
           </div>
 
@@ -945,7 +1025,10 @@ function GestionUI() {
               </div>
               <div className="progress-wrap" title={`Cycle : ${STAT_PROGRESS(entreprise.statut)}%`}>
                 <div className="progress-bar">
-                  <div className={`progress-fill s-${STAT_STEPS.indexOf(entreprise.statut)}`} style={{width: STAT_PROGRESS(entreprise.statut)+"%"}}/>
+                  <div
+                    className={`progress-fill s-${STAT_STEPS.indexOf(entreprise.statut)}`}
+                    style={{width: STAT_PROGRESS(entreprise.statut)+"%"}}
+                  />
                 </div>
                 <div className="progress-label">{entreprise.statut}</div>
               </div>
@@ -954,48 +1037,233 @@ function GestionUI() {
             {/* LIGNE : intérêt */}
             <div className="interest-row mb8">
               <label>Niveau d’intérêt (1–5)</label>
-              <input className="interest-range" type="range" min="1" max="5" step="1"
+              <input
+                className="interest-range"
+                type="range"
+                min="1"
+                max="5"
+                step="1"
                 value={entreprise.interet}
-                onChange={e=>setField("interet",e.target.value)} />
+                onChange={e=>setField("interet",e.target.value)}
+              />
               <span className="value-pill">{entreprise.interet}/5</span>
             </div>
 
-            {/* ACTION RAPIDE */}
+            {/* JOURNAL DE BORD : modèle 2 */}
             <div className="action-row">
-              <label>Ajouter une action</label>
-              <div className="cols-2">
-                <div>
-                  <select value={actionCat} onChange={e=>{ setActionCat(e.target.value); setActionSub(""); }}>
-                    <option value="">— Catégorie —</option>
-                    {Object.keys(ACTIONS).map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <select value={actionSub} onChange={e=>setActionSub(e.target.value)} disabled={!actionCat}>
-                    <option value="">— Sous-action —</option>
-                    {(ACTIONS[actionCat||""]||[]).map(sub => <option key={sub} value={sub}>{sub}</option>)}
-                  </select>
-                </div>
+              <label>Journal de bord</label>
+
+            {/* 1) Moyen de contact */}
+            <div style={{ fontSize: 13, opacity: 0.8, marginBottom: 4 }}>
+              Moyen de contact
+            </div>
+            <div style={{display:"flex", flexWrap:"wrap", gap:8, marginBottom:8}}>
+              <button
+                type="button"
+                className={`btn small ${actionSub === "Courrier" ? "cta" : ""}`}
+                onClick={()=>setActionSub("Courrier")}
+              >
+                📬 Courrier
+              </button>
+              <button
+                type="button"
+                className={`btn small ${actionSub === "Mail" ? "cta" : ""}`}
+                onClick={()=>setActionSub("Mail")}
+              >
+                📧 Mail
+              </button>
+              <button
+                type="button"
+                className={`btn small ${actionSub === "Téléphone" ? "cta" : ""}`}
+                onClick={()=>setActionSub("Téléphone")}
+              >
+                📞 Téléphone
+              </button>
+              <button
+                type="button"
+                className={`btn small ${actionSub === "SMS" ? "cta" : ""}`}
+                onClick={()=>setActionSub("SMS")}
+              >
+                💬 SMS
+              </button>
+              <button
+                type="button"
+                className={`btn small ${actionSub === "LinkedIn" ? "cta" : ""}`}
+                onClick={()=>setActionSub("LinkedIn")}
+              >
+                🧑‍💼 LinkedIn
+              </button>
+              <button
+                type="button"
+                className={`btn small ${actionSub === "Visio" ? "cta" : ""}`}
+                onClick={()=>setActionSub("Visio")}
+              >
+                📹 RDV visio
+              </button>
+              <button
+                type="button"
+                className={`btn small ${actionSub === "Sur site" ? "cta" : ""}`}
+                onClick={()=>setActionSub("Sur site")}
+              >
+                🏢 RDV sur site
+              </button>
+              <button
+                type="button"
+                className={`btn small ${actionSub === "Devis" ? "cta" : ""}`}
+                onClick={()=>setActionSub("Devis")}
+              >
+                🧾 Devis
+              </button>
+            </div>
+
+            {/* 2) Type d’action */}
+            <div style={{ fontSize: 13, opacity: 0.8, marginBottom: 4 }}>
+              Type d’action
+            </div>
+            <div style={{display:"flex", flexWrap:"wrap", gap:8, marginBottom:8}}>
+              <button
+                type="button"
+                className={`btn small ${actionCat === "Envoi" ? "cta" : ""}`}
+                onClick={()=>{
+                  if (!actionSub) return alert("Choisis d’abord un moyen de contact (courrier, mail, téléphone…).");
+                  setActionCat("Envoi");
+                  addActivity({
+                    type: "Envoi",
+                    subType: actionSub,
+                    result: "En cours",
+                    note: `Envoi via ${actionSub.toLowerCase()}`
+                  });
+                }}
+              >
+                ✉️ Envoi
+              </button>
+              <button
+                type="button"
+                className={`btn small ${actionCat === "Relance" ? "cta" : ""}`}
+                onClick={()=>{
+                  if (!actionSub) return alert("Choisis d’abord un moyen de contact (courrier, mail, téléphone…).");
+                  setActionCat("Relance");
+                  addActivity({
+                    type: "Relance",
+                    subType: actionSub,
+                    result: "En cours",
+                    note: `Relance ${actionSub.toLowerCase()}`
+                  });
+                }}
+              >
+                🔁 Relance
+              </button>
+              <button
+                type="button"
+                className={`btn small ${actionCat === "Rendez-vous" ? "cta" : ""}`}
+                onClick={()=>{
+                  if (!actionSub) return alert("Choisis d’abord un moyen de contact.");
+                  setActionCat("Rendez-vous");
+                  addActivity({
+                    type: "Rendez-vous",
+                    subType: actionSub,
+                    result: "En cours",
+                    note: `RDV (${actionSub.toLowerCase()})`
+                  });
+                }}
+              >
+                📅 Rendez-vous
+              </button>
+              <button
+                type="button"
+                className={`btn small ${actionCat === "Événement" ? "cta" : ""}`}
+                onClick={()=>{
+                  if (!actionSub) return alert("Choisis d’abord un moyen de contact.");
+                  setActionCat("Événement");
+                  addActivity({
+                    type: "Événement",
+                    subType: actionSub,
+                    result: "En cours",
+                    note: `Événement (${actionSub.toLowerCase()})`
+                  });
+                }}
+              >
+                🎪 Événement
+              </button>
+              <button
+                type="button"
+                className={`btn small ${actionCat === "Autre" ? "cta" : ""}`}
+                onClick={()=>{
+                  if (!actionSub) return alert("Choisis d’abord un moyen de contact.");
+                  setActionCat("Autre");
+                  addActivity({
+                    type: "Autre",
+                    subType: actionSub,
+                    result: "En cours",
+                    note: `Action autre via ${actionSub.toLowerCase()}`
+                  });
+                }}
+              >
+                ✏️ Autre
+              </button>
+            </div>
+
+            {/* Petit récap de ce qui va être enregistré */}
+            <div style={{marginTop:4, fontSize:12, opacity:0.7}}>
+              {actionCat && actionSub
+                ? <>Prochaine action rapide : <b>{actionCat}</b> via <b>{actionSub}</b></>
+                : <>Choisis un <b>moyen</b> puis un <b>type d’action</b> pour enregistrer.</>}
+            </div>
+          </div>
+
+
+                        {/* FORMULAIRE DÉTAILLÉ (si tu veux personnaliser) */}
+            <div className="action-row">
+              <label>Ajouter une action (détails)</label>
+
+              {/* Juste la catégorie d’action */}
+              <div style={{marginBottom:8}}>
+                <select
+                  value={actionCat}
+                  onChange={e=>setActionCat(e.target.value)}
+                >
+                  <option value="">— Catégorie —</option>
+                  {Object.keys(ACTIONS).map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
               </div>
+
+              {/* Résultat + note */}
               <div className="cols-2" style={{marginTop:8}}>
                 <div>
-                  <select value={actionResult} onChange={e=>setActionResult(e.target.value)}>
-                    <option>En attente</option>
+                  <select
+                    value={actionResult}
+                    onChange={e=>setActionResult(e.target.value)}
+                  >
+                    <option>En cours</option>
                     <option>OK</option>
                     <option>NR</option>
                     <option>Refus</option>
                   </select>
                 </div>
                 <div>
-                  <input placeholder="Note (optionnelle)" value={actionNote} onChange={e=>setActionNote(e.target.value)} />
+                  <input
+                    placeholder="Note (optionnelle)"
+                    value={actionNote}
+                    onChange={e=>setActionNote(e.target.value)}
+                  />
                 </div>
               </div>
+
+              {/* Bouton d’ajout */}
               <div style={{marginTop:8, display:"flex", justifyContent:"flex-end"}}>
                 <button
+                  type="button"
                   className="btn small"
                   onClick={()=>{
                     if(!actionCat) return alert("Choisis une catégorie d’action.");
-                    addActivity({ type: actionCat, subType: actionSub||"", result: actionResult, note: actionNote.trim() });
+                    addActivity({
+                      type: actionCat,
+                      subType: "", // plus de sous-action ici
+                      result: actionResult,
+                      note: actionNote.trim()
+                    });
                   }}
                 >
                   + Ajouter à la timeline
@@ -1003,42 +1271,41 @@ function GestionUI() {
               </div>
             </div>
 
-            {/* CONTROLS timeline */}
-            <div className="tl-controls">
-              <select value={tlFilterType} onChange={e=>setTlFilterType(e.target.value)}>
-                <option value="">Tous types</option>
-                {Object.keys(ACTIONS).map(t=><option key={t} value={t}>{t}</option>)}
-              </select>
-              <select value={tlFilterResult} onChange={e=>setTlFilterResult(e.target.value)}>
-                <option value="">Tous résultats</option>
-                <option>En attente</option><option>OK</option><option>NR</option><option>Refus</option>
-              </select>
-              <select value={tlOrder} onChange={e=>setTlOrder(e.target.value)}>
-                <option value="desc">Plus récent ▾</option>
-                <option value="asc">Plus ancien ▴</option>
-              </select>
-              <label className="square-check">
-                <input type="checkbox" checked={tlCondensed} onChange={e=>setTlCondensed(e.target.checked)} />
-                <span>Mode condensé</span>
-              </label>
-              <label className="square-check">
-                <input type="checkbox" checked={tlHideOld} onChange={e=>setTlHideOld(e.target.checked)} />
-                <span>Masquer &gt; 90 jours</span>
-              </label>
-            </div>
-
-            {/* TIMELINE HORIZONTALE */}
+                        {/* TIMELINE HORIZONTALE */}
             <div className={`timeline-h ${tlCondensed ? "condensed":""}`}>
               {filteredTimeline.length ? (
                 <ul className="timeline-h-list">
                   {filteredTimeline.map(a => (
-                    <li key={a.id} className={`timeline-card t-${(a.type||"").toLowerCase().replace(/[èéê]/g,'e').replace(/\W+/g,'-')} r-${(a.result||"en-attente").toLowerCase().replace(/\s+/g,'-')}`}>
+                    <li
+                      key={a.id}
+                      className={`timeline-card t-${(a.type||"").toLowerCase().replace(/[èéê]/g,'e').replace(/\W+/g,'-')} r-${(a.result||"en-attente").toLowerCase().replace(/\s+/g,'-')}`}
+                    >
                       <div className="tl-header">
-                        <span className="tl-type">{a.type}{a.subType ? " · "+a.subType : ""}</span>
-                        <span className={`badge result-${(a.result||"en-attente").toLowerCase().replace(/\s+/g,'-')}`}>{a.result||"En attente"}</span>
+                        <span className="tl-type">
+                          {a.type}{a.subType ? " · "+a.subType : ""}
+                        </span>
+                        <span className={`badge result-${(a.result||"en-attente").toLowerCase().replace(/\s+/g,'-')}`}>
+                          {a.result || "En attente"}
+                        </span>
                       </div>
-                      <div className="tl-date">{new Date(a.dateISO).toLocaleString()}</div>
-                      {!tlCondensed && (a.note ? <div className="tl-note">{a.note}</div> : null)}
+
+                      <div className="tl-date">
+                        {new Date(a.dateISO).toLocaleString()}
+                      </div>
+
+                      {!tlCondensed && (
+                        <div className="tl-footer">
+                          {a.note && <div className="tl-note">{a.note}</div>}
+                          <button
+                            type="button"
+                            className="tl-trash"
+                            onClick={() => deleteActivity(a.id)}
+                            title="Supprimer cette action"
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -1047,48 +1314,17 @@ function GestionUI() {
               )}
             </div>
 
-            {/* Statut + dates + prochaine action */}
-            <div className="suivi-compact tight">
-              <div>
-                <label>Statut</label>
-                <select value={entreprise.statut} onChange={e=>setField("statut",e.target.value)}>
-                  {STAT_STEPS.map(s=>(<option key={s}>{s}</option>))}
-                </select>
-              </div>
-              <div>
-                <label>Dernier contact</label>
-                <input type="date" value={entreprise.dateDernier} onChange={e=>setField("dateDernier",e.target.value)} />
-              </div>
-              <div>
-                <label>Date prochaine</label>
-                <input type="date" value={entreprise.dateProchaine} onChange={e=>setField("dateProchaine",e.target.value)} />
-              </div>
-              <div>
-                <label>Action — Catégorie</label>
-                <select value={entreprise.prochaineActionCat} onChange={e=>setField("prochaineActionCat",e.target.value)}>
-                  <option value="">— Choisir —</option>
-                  {Object.keys(ACTIONS).map(cat=>(<option key={cat} value={cat}>{cat}</option>))}
-                </select>
-              </div>
-              <div>
-                <label>Sous-action</label>
-                <select value={entreprise.prochaineActionSub} onChange={e=>setField("prochaineActionSub",e.target.value)} disabled={!entreprise.prochaineActionCat}>
-                  <option value="">— Choisir —</option>
-                  {ACTIONS[entreprise.prochaineActionCat||""]?.map(sub=>(<option key={sub} value={sub}>{sub}</option>))}
-                </select>
-              </div>
-              <div>
-                <label>Prochaine action (résumé)</label>
-                <input readOnly value={entreprise.prochaineAction} placeholder="Catégorie > Sous-action" />
-              </div>
-              <div>
-                <label>Montant potentiel (€)</label>
-                <input value={entreprise.montant} onChange={e=>setField("montant",e.target.value)} placeholder="Montant du sponsoring" />
-              </div>
+            {/* Montant potentiel seulement */}
+            <div style={{marginTop:16}}>
+              <label>Montant potentiel (€)</label>
+              <input
+                value={entreprise.montant || ""}
+                onChange={e=>setField("montant", e.target.value.replace(",", "."))}
+                placeholder="Montant du sponsoring"
+              />
             </div>
           </div>
-        </div>
-      </section>
+        </div>      </section>
 
       {/* RIGHT-UNDER Contact chips */}
       <section className="right-under">
