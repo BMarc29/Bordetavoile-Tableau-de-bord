@@ -387,6 +387,7 @@ const STAT_PROGRESS = (s)=>{
   return Math.round((i/(STAT_STEPS.length-1))*100);
 };
 
+
 /* ---------- store ---------- */
 const store = {
   load: () => { try { return JSON.parse(localStorage.getItem("btv_liste")||"[]"); } catch { return []; } },
@@ -995,21 +996,19 @@ const addActivity = ({ type, subType = "", result = "En cours", note = "" }) => 
         </div>
       </section>
 
-      {/* RIGHT : Suivi du démarchage */}
+            {/* RIGHT : Suivi du démarchage */}
       <section className="right">
         <div className="card fill">
           <div className="card-header">
-                <div className="card-header">
-              <h2 className="card-title">
-                Suivi du démarchage
-                <span className="badge pill" style={{ marginLeft: 8 }}>
-                  {entreprise.statut || "En prospection"}
-                </span>
-              </h2>
-              <div className="card-header-actions">
-                <button className="btn small" onClick={()=>setShowCalendar(true)}>📅 Calendrier</button>
-                <button className="btn small" onClick={relancerAuj}>↻ Relancer aujourd’hui</button>
-              </div>
+            <h2 className="card-title">
+              Suivi du démarchage
+              <span className="badge pill" style={{ marginLeft: 8 }}>
+                {entreprise.statut || "En prospection"}
+              </span>
+            </h2>
+            <div className="card-header-actions">
+              <button className="btn small" onClick={()=>setShowCalendar(true)}>📅 Calendrier</button>
+              <button className="btn small" onClick={relancerAuj}>↻ Relancer aujourd’hui</button>
             </div>
           </div>
 
@@ -1053,166 +1052,165 @@ const addActivity = ({ type, subType = "", result = "En cours", note = "" }) => 
             <div className="action-row">
               <label>Journal de bord</label>
 
-            {/* 1) Moyen de contact */}
-            <div style={{ fontSize: 13, opacity: 0.8, marginBottom: 4 }}>
-              Moyen de contact
-            </div>
-            <div style={{display:"flex", flexWrap:"wrap", gap:8, marginBottom:8}}>
-              <button
-                type="button"
-                className={`btn small ${actionSub === "Courrier" ? "cta" : ""}`}
-                onClick={()=>setActionSub("Courrier")}
-              >
-                📬 Courrier
-              </button>
-              <button
-                type="button"
-                className={`btn small ${actionSub === "Mail" ? "cta" : ""}`}
-                onClick={()=>setActionSub("Mail")}
-              >
-                📧 Mail
-              </button>
-              <button
-                type="button"
-                className={`btn small ${actionSub === "Téléphone" ? "cta" : ""}`}
-                onClick={()=>setActionSub("Téléphone")}
-              >
-                📞 Téléphone
-              </button>
-              <button
-                type="button"
-                className={`btn small ${actionSub === "SMS" ? "cta" : ""}`}
-                onClick={()=>setActionSub("SMS")}
-              >
-                💬 SMS
-              </button>
-              <button
-                type="button"
-                className={`btn small ${actionSub === "LinkedIn" ? "cta" : ""}`}
-                onClick={()=>setActionSub("LinkedIn")}
-              >
-                🧑‍💼 LinkedIn
-              </button>
-              <button
-                type="button"
-                className={`btn small ${actionSub === "Visio" ? "cta" : ""}`}
-                onClick={()=>setActionSub("Visio")}
-              >
-                📹 RDV visio
-              </button>
-              <button
-                type="button"
-                className={`btn small ${actionSub === "Sur site" ? "cta" : ""}`}
-                onClick={()=>setActionSub("Sur site")}
-              >
-                🏢 RDV sur site
-              </button>
-              <button
-                type="button"
-                className={`btn small ${actionSub === "Devis" ? "cta" : ""}`}
-                onClick={()=>setActionSub("Devis")}
-              >
-                🧾 Devis
-              </button>
+              {/* 1) Moyen de contact */}
+              <div style={{ fontSize: 13, opacity: 0.8, marginBottom: 4 }}>
+                Moyen de contact
+              </div>
+              <div style={{display:"flex", flexWrap:"wrap", gap:8, marginBottom:8}}>
+                <button
+                  type="button"
+                  className={`btn small ${actionSub === "Courrier" ? "cta" : ""}`}
+                  onClick={()=>setActionSub("Courrier")}
+                >
+                  📬 Courrier
+                </button>
+                <button
+                  type="button"
+                  className={`btn small ${actionSub === "Mail" ? "cta" : ""}`}
+                  onClick={()=>setActionSub("Mail")}
+                >
+                  📧 Mail
+                </button>
+                <button
+                  type="button"
+                  className={`btn small ${actionSub === "Téléphone" ? "cta" : ""}`}
+                  onClick={()=>setActionSub("Téléphone")}
+                >
+                  📞 Téléphone
+                </button>
+                <button
+                  type="button"
+                  className={`btn small ${actionSub === "SMS" ? "cta" : ""}`}
+                  onClick={()=>setActionSub("SMS")}
+                >
+                  💬 SMS
+                </button>
+                <button
+                  type="button"
+                  className={`btn small ${actionSub === "LinkedIn" ? "cta" : ""}`}
+                  onClick={()=>setActionSub("LinkedIn")}
+                >
+                  🔗 LinkedIn
+                </button>
+                <button
+                  type="button"
+                  className={`btn small ${actionSub === "Visio" ? "cta" : ""}`}
+                  onClick={()=>setActionSub("Visio")}
+                >
+                  📹 Visio
+                </button>
+                <button
+                  type="button"
+                  className={`btn small ${actionSub === "Sur site" ? "cta" : ""}`}
+                  onClick={()=>setActionSub("Sur site")}
+                >
+                  🏢 Sur site
+                </button>
+                <button
+                  type="button"
+                  className={`btn small ${actionSub === "Devis" ? "cta" : ""}`}
+                  onClick={()=>setActionSub("Devis")}
+                >
+                  🧾 Devis
+                </button>
+              </div>
+
+              {/* 2) Type d’action rapide */}
+              <div style={{ fontSize: 13, opacity: 0.8, marginBottom: 4 }}>
+                Type d’action
+              </div>
+              <div style={{display:"flex", flexWrap:"wrap", gap:8}}>
+                <button
+                  type="button"
+                  className={`btn small ${actionCat === "Envoi" ? "cta" : ""}`}
+                  onClick={()=>{
+                    if (!actionSub) return alert("Choisis d’abord un moyen de contact.");
+                    setActionCat("Envoi");
+                    addActivity({
+                      type: "Envoi",
+                      subType: actionSub,
+                      result: "En cours",
+                      note: `Envoi via ${actionSub.toLowerCase()}`
+                    });
+                  }}
+                >
+                  ✉️ Envoi
+                </button>
+                <button
+                  type="button"
+                  className={`btn small ${actionCat === "Relance" ? "cta" : ""}`}
+                  onClick={()=>{
+                    if (!actionSub) return alert("Choisis d’abord un moyen de contact (courrier, mail, téléphone…).");
+                    setActionCat("Relance");
+                    addActivity({
+                      type: "Relance",
+                      subType: actionSub,
+                      result: "En cours",
+                      note: `Relance ${actionSub.toLowerCase()}`
+                    });
+                  }}
+                >
+                  🔁 Relance
+                </button>
+                <button
+                  type="button"
+                  className={`btn small ${actionCat === "Rendez-vous" ? "cta" : ""}`}
+                  onClick={()=>{
+                    if (!actionSub) return alert("Choisis d’abord un moyen de contact.");
+                    setActionCat("Rendez-vous");
+                    addActivity({
+                      type: "Rendez-vous",
+                      subType: actionSub,
+                      result: "En cours",
+                      note: `RDV (${actionSub.toLowerCase()})`
+                    });
+                  }}
+                >
+                  📅 Rendez-vous
+                </button>
+                <button
+                  type="button"
+                  className={`btn small ${actionCat === "Événement" ? "cta" : ""}`}
+                  onClick={()=>{
+                    if (!actionSub) return alert("Choisis d’abord un moyen de contact.");
+                    setActionCat("Événement");
+                    addActivity({
+                      type: "Événement",
+                      subType: actionSub,
+                      result: "En cours",
+                      note: `Événement (${actionSub.toLowerCase()})`
+                    });
+                  }}
+                >
+                  🎪 Événement
+                </button>
+                <button
+                  type="button"
+                  className={`btn small ${actionCat === "Autre" ? "cta" : ""}`}
+                  onClick={()=>{
+                    if (!actionSub) return alert("Choisis d’abord un moyen de contact.");
+                    setActionCat("Autre");
+                    addActivity({
+                      type: "Autre",
+                      subType: actionSub,
+                      result: "En cours",
+                      note: `Action autre via ${actionSub.toLowerCase()}`
+                    });
+                  }}
+                >
+                  ✏️ Autre
+                </button>
+              </div>
+
+              {/* Petit récap de ce qui va être enregistré */}
+              <div style={{marginTop:4, fontSize:12, opacity:0.7}}>
+                {actionCat && actionSub
+                  ? <>Prochaine action rapide : <b>{actionCat}</b> via <b>{actionSub}</b></>
+                  : <>Choisis un <b>moyen</b> puis un <b>type d’action</b> pour enregistrer.</>}
+              </div>
             </div>
 
-            {/* 2) Type d’action */}
-            <div style={{ fontSize: 13, opacity: 0.8, marginBottom: 4 }}>
-              Type d’action
-            </div>
-            <div style={{display:"flex", flexWrap:"wrap", gap:8, marginBottom:8}}>
-              <button
-                type="button"
-                className={`btn small ${actionCat === "Envoi" ? "cta" : ""}`}
-                onClick={()=>{
-                  if (!actionSub) return alert("Choisis d’abord un moyen de contact (courrier, mail, téléphone…).");
-                  setActionCat("Envoi");
-                  addActivity({
-                    type: "Envoi",
-                    subType: actionSub,
-                    result: "En cours",
-                    note: `Envoi via ${actionSub.toLowerCase()}`
-                  });
-                }}
-              >
-                ✉️ Envoi
-              </button>
-              <button
-                type="button"
-                className={`btn small ${actionCat === "Relance" ? "cta" : ""}`}
-                onClick={()=>{
-                  if (!actionSub) return alert("Choisis d’abord un moyen de contact (courrier, mail, téléphone…).");
-                  setActionCat("Relance");
-                  addActivity({
-                    type: "Relance",
-                    subType: actionSub,
-                    result: "En cours",
-                    note: `Relance ${actionSub.toLowerCase()}`
-                  });
-                }}
-              >
-                🔁 Relance
-              </button>
-              <button
-                type="button"
-                className={`btn small ${actionCat === "Rendez-vous" ? "cta" : ""}`}
-                onClick={()=>{
-                  if (!actionSub) return alert("Choisis d’abord un moyen de contact.");
-                  setActionCat("Rendez-vous");
-                  addActivity({
-                    type: "Rendez-vous",
-                    subType: actionSub,
-                    result: "En cours",
-                    note: `RDV (${actionSub.toLowerCase()})`
-                  });
-                }}
-              >
-                📅 Rendez-vous
-              </button>
-              <button
-                type="button"
-                className={`btn small ${actionCat === "Événement" ? "cta" : ""}`}
-                onClick={()=>{
-                  if (!actionSub) return alert("Choisis d’abord un moyen de contact.");
-                  setActionCat("Événement");
-                  addActivity({
-                    type: "Événement",
-                    subType: actionSub,
-                    result: "En cours",
-                    note: `Événement (${actionSub.toLowerCase()})`
-                  });
-                }}
-              >
-                🎪 Événement
-              </button>
-              <button
-                type="button"
-                className={`btn small ${actionCat === "Autre" ? "cta" : ""}`}
-                onClick={()=>{
-                  if (!actionSub) return alert("Choisis d’abord un moyen de contact.");
-                  setActionCat("Autre");
-                  addActivity({
-                    type: "Autre",
-                    subType: actionSub,
-                    result: "En cours",
-                    note: `Action autre via ${actionSub.toLowerCase()}`
-                  });
-                }}
-              >
-                ✏️ Autre
-              </button>
-            </div>
-
-            {/* Petit récap de ce qui va être enregistré */}
-            <div style={{marginTop:4, fontSize:12, opacity:0.7}}>
-              {actionCat && actionSub
-                ? <>Prochaine action rapide : <b>{actionCat}</b> via <b>{actionSub}</b></>
-                : <>Choisis un <b>moyen</b> puis un <b>type d’action</b> pour enregistrer.</>}
-            </div>
-          </div>
-
-
-                        {/* FORMULAIRE DÉTAILLÉ (si tu veux personnaliser) */}
+            {/* FORMULAIRE DÉTAILLÉ (si tu veux personnaliser) */}
             <div className="action-row">
               <label>Ajouter une action (détails)</label>
 
@@ -1260,7 +1258,7 @@ const addActivity = ({ type, subType = "", result = "En cours", note = "" }) => 
                     if(!actionCat) return alert("Choisis une catégorie d’action.");
                     addActivity({
                       type: actionCat,
-                      subType: "", // plus de sous-action ici
+                      subType: "",
                       result: actionResult,
                       note: actionNote.trim()
                     });
@@ -1271,7 +1269,7 @@ const addActivity = ({ type, subType = "", result = "En cours", note = "" }) => 
               </div>
             </div>
 
-                        {/* TIMELINE HORIZONTALE */}
+            {/* TIMELINE HORIZONTALE */}
             <div className={`timeline-h ${tlCondensed ? "condensed":""}`}>
               {filteredTimeline.length ? (
                 <ul className="timeline-h-list">
@@ -1285,7 +1283,7 @@ const addActivity = ({ type, subType = "", result = "En cours", note = "" }) => 
                           {a.type}{a.subType ? " · "+a.subType : ""}
                         </span>
                         <span className={`badge result-${(a.result||"en-attente").toLowerCase().replace(/\s+/g,'-')}`}>
-                          {a.result || "En attente"}
+                          {a.result || "En cours"}
                         </span>
                       </div>
 
@@ -1323,8 +1321,10 @@ const addActivity = ({ type, subType = "", result = "En cours", note = "" }) => 
                 placeholder="Montant du sponsoring"
               />
             </div>
+
           </div>
-        </div>      </section>
+        </div>
+      </section>
 
       {/* RIGHT-UNDER Contact chips */}
       <section className="right-under">
