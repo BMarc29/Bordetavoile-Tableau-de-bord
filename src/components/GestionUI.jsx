@@ -1,6 +1,11 @@
 /* ==== src/components/GestionUI.jsx (V2.2 – Export CSV + filtre par taille) ==== */
 const { useState, useEffect, useMemo } = React;
 
+// URL d’intégration Google Calendar (embed de bordetavoile@gmail.com)
+const G_CAL_EMBED_BASE =
+  "https://calendar.google.com/calendar/embed?src=bordetavoile%40gmail.com&ctz=Europe%2FParis";
+
+
 /* ---------- helpers ---------- */
 const COEF_KM = 0.665;
 const ensureHttp = (u) => !u ? "" : (/^https?:\/\//i.test(String(u).trim()) ? String(u).trim() : "https://" + String(u).trim());
@@ -20,7 +25,17 @@ const CURRENT_USER_KEY = "btv_current_user_v1";
 
 const userStore = {
   loadUsers() {
-    try { return JSON.parse(localStorage.getItem(USER_KEY) || "[]"); } catch { return []; }
+    try {
+      const raw = JSON.parse(localStorage.getItem(USER_KEY) || "[]");
+      // on garantit un statut (par défaut = "active" pour les anciens comptes)
+      return (raw || []).map(u => ({
+        status: "active",
+        ...u,
+        status: u.status || "active"
+      }));
+    } catch {
+      return [];
+    }
   },
   saveUsers(users) {
     try { localStorage.setItem(USER_KEY, JSON.stringify(users || [])); } catch {}
@@ -36,25 +51,43 @@ const userStore = {
   }
 };
 
+
 /* ---- Écran de connexion ---- */
-function LoginScreen({ users, onLogin, onCreateFirstUser }) {
-  const [mode, setMode] = React.useState(users.length ? "login" : "create");
+function LoginScreen({ users, onLogin, onCreateFirstUser, onRegisterRequest }) {
+  const hasUsers = users.length > 0;
+
+  // login / register uniquement quand il y a déjà au moins un compte
+  const [mode, setMode] = React.useState(hasUsers ? "login" : "createAdmin");
   const [email, setEmail] = React.useState(users[0]?.email || "");
   const [password, setPassword] = React.useState("");
   const [name, setName] = React.useState("");
 
+  /* ----- Connexion ----- */
   const handleLogin = (e) => {
     e.preventDefault();
     const mail = (email || "").trim().toLowerCase();
     const u = users.find(x => (x.email || "").toLowerCase() === mail);
+
     if (!u || (u.password || "") !== password) {
       alert("Identifiants invalides.");
       return;
     }
+
+    // si le compte n'est pas encore validé
+    if (u.status && u.status !== "active") {
+      if (u.status === "pending") {
+        alert("Ton compte est en attente de validation par un administrateur.");
+      } else {
+        alert("Ce compte est désactivé. Contacte l’administrateur.");
+      }
+      return;
+    }
+
     onLogin(u);
   };
 
-  const handleCreate = (e) => {
+  /* ----- Création du tout premier admin ----- */
+  const handleCreateFirst = (e) => {
     e.preventDefault();
     if (!name.trim() || !email.trim() || !password.trim()) {
       alert("Nom, e-mail et mot de passe sont requis.");
@@ -64,25 +97,82 @@ function LoginScreen({ users, onLogin, onCreateFirstUser }) {
       id: Date.now(),
       name: name.trim(),
       email: email.trim(),
-      role: "admin",           // premier compte = admin
-      password: password       // stocké en clair (outil local)
+      role: "admin",
+      password,
+      status: "active"        // premier compte = admin actif
     };
     onCreateFirstUser(u);
   };
 
-  if (mode === "login") {
-    return (
-      <div className="login-screen">
-        <div className="login-card">
-          <img
+  /* ----- Demande de nouveau compte (utilisateur standard) ----- */
+  const handleRegister = (e) => {
+    e.preventDefault();
+    if (!name.trim() || !email.trim() || !password.trim()) {
+      alert("Nom, e-mail et mot de passe sont requis.");
+      return;
+    }
+
+    const mail = email.trim().toLowerCase();
+    if (users.some(u => (u.email || "").toLowerCase() === mail)) {
+      alert("Un compte existe déjà avec cet e-mail.");
+      return;
+    }
+
+    const u = {
+      id: Date.now(),
+      name: name.trim(),
+      email: email.trim(),
+      role: "user",
+      password,
+      status: "pending"       // ➜ devra être validé par un admin
+    };
+
+    onRegisterRequest(u);
+
+    alert("✅ Demande envoyée. Un administrateur doit valider ton compte avant que tu puisses te connecter.");
+    // on repasse sur l’onglet connexion
+    setMode("login");
+    setPassword("");
+  };
+
+  /* ----- Cas général : il existe déjà au moins un compte ----- */
+  return (
+    <div className="login-screen">
+      <div className="login-card">
+        <img
           src="./build/logo.png"
           alt="Borde Ta Voile"
           className="login-boat"
         />
-          <h2>Connexion</h2>
-          <p className="login-context">
-            Sélectionne ton compte et saisis le mot de passe pour accéder à la plateforme.
-          </p>
+
+        <h2>{mode === "login" ? "Connexion" : "Nouveau compte"}</h2>
+        <p className="login-context">
+          {mode === "login"
+            ? "Sélectionne ton compte et saisis le mot de passe."
+            : "Demande la création d’un compte. Un administrateur devra l’approuver."}
+        </p>
+
+        {/* Onglets Connexion / Nouveau compte */}
+        <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+          <button
+            type="button"
+            className={`btn small${mode === "login" ? " cta" : ""}`}
+            style={{ flex: 1 }}
+            onClick={() => { setMode("login"); setPassword(""); }}
+          >
+            Connexion
+          </button>
+          <button
+            type="button"
+            className={`btn small${mode === "register" ? " cta" : ""}`}
+            style={{ flex: 1 }}
+            onClick={() => { setMode("register"); setPassword(""); }}
+          >
+            Nouveau compte
+          </button>
+        </div>
+
+        {mode === "login" ? (
           <form onSubmit={handleLogin}>
             <label>Utilisateur</label>
             <select
@@ -90,7 +180,10 @@ function LoginScreen({ users, onLogin, onCreateFirstUser }) {
               onChange={e => setEmail(e.target.value)}
             >
               {users.map(u => (
-                <option key={u.id} value={u.email}>{u.name} ({u.role})</option>
+                <option key={u.id} value={u.email}>
+                  {u.name} ({u.role})
+                  {u.status === "pending" ? " – en attente" : ""}
+                </option>
               ))}
             </select>
 
@@ -106,51 +199,43 @@ function LoginScreen({ users, onLogin, onCreateFirstUser }) {
               <button type="submit" className="btn cta">Se connecter</button>
             </div>
           </form>
+        ) : (
+          <form onSubmit={handleRegister}>
+            <label>Nom</label>
+            <input
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="Prénom Nom"
+            />
 
-          {users.length === 0 && (
-            <p style={{marginTop:8, fontSize:13}}>
-              Aucun utilisateur trouvé, tu peux créer le premier compte administrateur.
-            </p>
-          )}
-        </div>
-      </div>
-    );
-  }
+            <label>E-mail</label>
+            <input
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="mon.email@exemple.fr"
+            />
 
-  // mode "create" pour tout premier compte (si tu veux le forcer)
-  return (
-    <div className="login-screen">
-      <div className="login-card">
-        <img
-          src="./build/logo.png"
-          alt="Borde Ta Voile"
-          className="login-boat"
-        />
-        <h2>Créer le premier compte</h2>
-        <p className="login-context">
-          Aucun utilisateur n'existe encore. Ce compte sera <b>administrateur</b>.
-        </p>
-        <form onSubmit={handleCreate}>
-          <label>Nom</label>
-          <input value={name} onChange={e => setName(e.target.value)} placeholder="Prénom Nom" />
+            <label>Mot de passe</label>
+            <input
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+            />
 
-          <label>E-mail</label>
-          <input value={email} onChange={e => setEmail(e.target.value)} placeholder="admin@exemple.fr" />
-
-          <label>Mot de passe</label>
-          <input type="password" value={password} onChange={e => setPassword(e.target.value)} />
-
-          <div className="login-actions">
-            <button type="submit" className="btn cta">Créer le compte</button>
-          </div>
-        </form>
+            <div className="login-actions">
+              <button type="submit" className="btn cta">
+                Envoyer la demande
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );
 }
 
 /* ---- Modale de gestion des utilisateurs (admin uniquement) ---- */
-function UserAdminModal({ users, onAddUser, onDeleteUser, onClose }) {
+function UserAdminModal({ users, onAddUser, onDeleteUser, onUpdateUser, onClose }) {
   const [name, setName] = React.useState("");
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
@@ -167,9 +252,17 @@ function UserAdminModal({ users, onAddUser, onDeleteUser, onClose }) {
       name: name.trim(),
       email: email.trim(),
       role,
-      password
+      password,
+      status: "active"   // un admin qui crée un compte le rend actif directement
     });
     setName(""); setEmail(""); setPassword(""); setRole("user");
+  };
+
+  const labelStatus = (u) => {
+    const s = u.status || "active";
+    if (s === "pending") return "En attente";
+    if (s === "disabled") return "Désactivé";
+    return "Actif";
   };
 
   return (
@@ -185,18 +278,47 @@ function UserAdminModal({ users, onAddUser, onDeleteUser, onClose }) {
           {users.map(u => (
             <li key={u.id} className="user-item">
               <div>
-                <strong>{u.name}</strong> — {u.email} ({u.role})
+                <strong>{u.name}</strong> — {u.email} ({u.role}){" "}
+                <span style={{ fontSize: 12, opacity: 0.8 }}>
+                  · {labelStatus(u)}
+                </span>
               </div>
-              <button
-                className="btn small danger"
-                onClick={() => {
-                  if (confirm(`Supprimer l'utilisateur "${u.name}" ?`)) {
-                    onDeleteUser(u.id);
-                  }
-                }}
-              >
-                Supprimer
-              </button>
+              <div style={{ display: "flex", gap: 6 }}>
+                { (u.status || "active") === "pending" && (
+                  <button
+                    className="btn small"
+                    onClick={() => onUpdateUser({ ...u, status: "active" })}
+                  >
+                    Valider
+                  </button>
+                )}
+                { (u.status || "active") === "active" && (
+                  <button
+                    className="btn small"
+                    onClick={() => onUpdateUser({ ...u, status: "disabled" })}
+                  >
+                    Désactiver
+                  </button>
+                )}
+                { (u.status || "active") === "disabled" && (
+                  <button
+                    className="btn small"
+                    onClick={() => onUpdateUser({ ...u, status: "active" })}
+                  >
+                    Réactiver
+                  </button>
+                )}
+                <button
+                  className="btn small danger"
+                  onClick={() => {
+                    if (confirm(`Supprimer l'utilisateur "${u.name}" ?`)) {
+                      onDeleteUser(u.id);
+                    }
+                  }}
+                >
+                  Supprimer
+                </button>
+              </div>
             </li>
           ))}
           {!users.length && <li>Aucun utilisateur pour le moment.</li>}
@@ -271,6 +393,17 @@ function App() {
     setUsers([user]);
     setCurrentUser(user);
   };
+    const handleRegisterRequest = (user) => {
+    // simple ajout, le compte reste non connecté et en "pending"
+    setUsers(prev => [...prev, user]);
+  };
+
+  const handleUpdateUser = (user) => {
+    setUsers(prev => prev.map(u => u.id === user.id ? user : u));
+    // si c'est l'utilisateur actuellement connecté, on met à jour aussi
+    setCurrentUser(cur => (cur && cur.id === user.id ? user : cur));
+  };
+
 
   const handleAddUser = (user) => {
     setUsers(prev => [...prev, user]);
@@ -293,9 +426,11 @@ function App() {
         users={users}
         onLogin={handleLogin}
         onCreateFirstUser={handleCreateFirstUser}
+        onRegisterRequest={handleRegisterRequest}
       />
     );
   }
+
 
   // Sinon, on affiche la barre utilisateur + l'app de gestion
   return (
@@ -314,18 +449,18 @@ function App() {
 
       <GestionUI currentUser={currentUser} />
 
-      {showUserAdmin && (
+            {showUserAdmin && (
         <UserAdminModal
           users={users}
           onAddUser={handleAddUser}
           onDeleteUser={handleDeleteUser}
+          onUpdateUser={handleUpdateUser}
           onClose={() => setShowUserAdmin(false)}
         />
       )}
     </>
   );
 }
-
 
 /* ---------- référentiels ---------- */
 const SECTEURS = {
@@ -415,6 +550,11 @@ function GestionUI() {
     montant:"",
     contacts:[],
 
+    // infos RDV
+    rdvDate:"",   // YYYY-MM-DD
+    rdvHeure:"",  // HH:MM
+    rdvLieu:"",   // texte libre (adresse, visio…)
+
     // suivi avancé
     activities: [],  // [{id,dateISO,type,subType,result,note}]
     statut: "En prospection"
@@ -470,6 +610,12 @@ function GestionUI() {
   /* Modale calendrier */
   const [showCalendar, setShowCalendar] = useState(false);
   const [calendarMonthOffset, setCalendarMonthOffset] = useState(0);
+
+    // Modale Agenda Google pour les rendez-vous
+  const [showRdvCalendar, setShowRdvCalendar] = useState(false);
+
+    // Modale de création de rendez-vous
+  const [showRdvModal, setShowRdvModal] = useState(false);
 
   /* Exposer l'état courant au header / renderer */
   // Expose l'état courant SANS toucher window.btv (verrouillé par Electron)
@@ -820,6 +966,25 @@ const addActivity = ({ type, subType = "", result = "En cours", note = "" }) => 
     return arr;
   }, [entreprise.activities, tlFilterType, tlFilterResult, tlOrder, tlHideOld]);
 
+    // URL du mini-agenda centré autour de la date choisie
+  const miniAgendaUrl = useMemo(() => {
+    if (!entreprise.rdvDate) return "";
+
+    try {
+      const d1 = new Date(entreprise.rdvDate + "T00:00:00");
+      const d2 = new Date(d1.getTime() + 7 * 864e5); // +7 jours
+
+      const start = d1.toISOString().slice(0, 10).replace(/-/g, "");
+      const end   = d2.toISOString().slice(0, 10).replace(/-/g, "");
+
+      // Vue semaine autour de la date choisie
+      return `${G_CAL_EMBED_BASE}&mode=WEEK&dates=${start}/${end}`;
+    } catch {
+      return G_CAL_EMBED_BASE;
+    }
+  }, [entreprise.rdvDate]);
+
+
   /* Filtres liste entreprises et indicateurs */
   const filteredEntreprises = useMemo(()=>{
     const start = new Date();
@@ -903,9 +1068,96 @@ const addActivity = ({ type, subType = "", result = "En cours", note = "" }) => 
     const sub = entreprise.prochaineActionSub || actionSub || "Mail";
     const key = [cat, sub].filter(Boolean).join(" > ");
     const nextDays = ACTION_DELAYS[key] ?? 7;
-    setEntreprise(prev => ({ ...prev, dateDernier: todayISO(), dateProchaine: new Date(Date.now()+nextDays*864e5).toISOString().slice(0,10) }));
-    addActivity({ type: cat, subType: sub, result: "En attente", note: "Relance programmée aujourd’hui" });
+
+    setEntreprise(prev => ({
+      ...prev,
+      dateDernier: todayISO(),
+      dateProchaine: new Date(Date.now() + nextDays * 864e5)
+        .toISOString()
+        .slice(0, 10)
+    }));
+
+    addActivity({
+      type: cat,
+      subType: sub,
+      result: "En attente",
+      note: "Relance programmée aujourd’hui"
+    });
   };
+
+/* Bouton Rendez-vous :
+ * - ajoute une action dans la timeline
+ * - ouvre la fenêtre "Créer un événement" dans Google Agenda (compte n°2)
+ */
+const openGCalRdv = () => {
+  if (!entreprise.nom) {
+    alert("Sélectionne d’abord une entreprise avant de créer un rendez-vous.");
+    return;
+  }
+
+  if (!entreprise.rdvDate) {
+    alert("Renseigne d’abord la date du rendez-vous.");
+    return;
+  }
+
+  if (!entreprise.rdvHeure) {
+    alert("Renseigne aussi l’heure du rendez-vous.");
+    return;
+  }
+
+  // 1) Ajout dans la timeline
+  const noteParts = [`RDV le ${entreprise.rdvDate}`, `à ${entreprise.rdvHeure}`];
+  if (entreprise.rdvLieu) noteParts.push(`– ${entreprise.rdvLieu}`);
+
+  addActivity({
+    type: "Rendez-vous",
+    subType: entreprise.rdvLieu || "À définir",
+    result: "En cours",
+    note: noteParts.join(" ")
+  });
+
+  // 2) Construction de l’URL Google Agenda (compte n°2 => /u/1/)
+  const makeDateTime = (dateStr, timeStr) => {
+    // dateStr = "YYYY-MM-DD", timeStr = "HH:MM"
+    const [y, m, d] = dateStr.split("-");
+    if (!timeStr) return `${y}${m}${d}`;
+    const [hh, mm] = timeStr.split(":");
+    return `${y}${m}${d}T${hh}${mm}00`;
+  };
+
+  const startDT = makeDateTime(entreprise.rdvDate, entreprise.rdvHeure);
+
+  // Fin = +1h par défaut
+  let endDT = startDT;
+  try {
+    const d = new Date(entreprise.rdvDate + "T" + entreprise.rdvHeure + ":00");
+    d.setHours(d.getHours() + 1);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    const hh = String(d.getHours()).padStart(2, "0");
+    const mm = String(d.getMinutes()).padStart(2, "0");
+    endDT = `${y}${m}${day}T${hh}${mm}00`;
+  } catch {}
+
+  const title = `RDV ${entreprise.nom}`;
+  const details = `Rendez-vous avec ${entreprise.nom}${
+    entreprise.contacts?.length
+      ? ` (contact : ${entreprise.contacts[0].prenom || ""} ${entreprise.contacts[0].nom || ""})`
+      : ""
+  }`;
+  const location = entreprise.rdvLieu || "";
+
+  const params = new URLSearchParams({
+    text: title,
+    dates: `${startDT}/${endDT}`,
+    details,
+    location
+  });
+
+  const url = `https://calendar.google.com/calendar/u/1/r/eventedit?${params.toString()}`;
+  window.open(url, "_blank", "noopener");
+};
 
     /* ---------- calendrier (modale) ---------- */
   const monthInfo = (offset = 0) => {
@@ -1006,8 +1258,13 @@ const addActivity = ({ type, subType = "", result = "En cours", note = "" }) => 
                 {entreprise.statut || "En prospection"}
               </span>
             </h2>
-            <div className="card-header-actions">
-              <button className="btn small" onClick={()=>setShowCalendar(true)}>📅 Calendrier</button>
+              <div className="card-header-actions">
+              <button
+                  className="btn small"
+                  onClick={() => setShowRdvModal(true)}
+                    >
+                      📅 Rendez-vous
+                    </button>
               <button className="btn small" onClick={relancerAuj}>↻ Relancer aujourd’hui</button>
             </div>
           </div>
@@ -1033,284 +1290,189 @@ const addActivity = ({ type, subType = "", result = "En cours", note = "" }) => 
               </div>
             </div>
 
-            {/* LIGNE : intérêt */}
-            <div className="interest-row mb8">
-              <label>Niveau d’intérêt (1–5)</label>
-              <input
-                className="interest-range"
-                type="range"
-                min="1"
-                max="5"
-                step="1"
-                value={entreprise.interet}
-                onChange={e=>setField("interet",e.target.value)}
-              />
-              <span className="value-pill">{entreprise.interet}/5</span>
-            </div>
-
             {/* JOURNAL DE BORD : modèle 2 */}
-            <div className="action-row">
-              <label>Journal de bord</label>
+                <div className="action-row">
+                  <label>Journal de bord</label>
 
-              {/* 1) Moyen de contact */}
-              <div style={{ fontSize: 13, opacity: 0.8, marginBottom: 4 }}>
-                Moyen de contact
-              </div>
-              <div style={{display:"flex", flexWrap:"wrap", gap:8, marginBottom:8}}>
-                <button
-                  type="button"
-                  className={`btn small ${actionSub === "Courrier" ? "cta" : ""}`}
-                  onClick={()=>setActionSub("Courrier")}
-                >
-                  📬 Courrier
-                </button>
-                <button
-                  type="button"
-                  className={`btn small ${actionSub === "Mail" ? "cta" : ""}`}
-                  onClick={()=>setActionSub("Mail")}
-                >
-                  📧 Mail
-                </button>
-                <button
-                  type="button"
-                  className={`btn small ${actionSub === "Téléphone" ? "cta" : ""}`}
-                  onClick={()=>setActionSub("Téléphone")}
-                >
-                  📞 Téléphone
-                </button>
-                <button
-                  type="button"
-                  className={`btn small ${actionSub === "SMS" ? "cta" : ""}`}
-                  onClick={()=>setActionSub("SMS")}
-                >
-                  💬 SMS
-                </button>
-                <button
-                  type="button"
-                  className={`btn small ${actionSub === "LinkedIn" ? "cta" : ""}`}
-                  onClick={()=>setActionSub("LinkedIn")}
-                >
-                  🔗 LinkedIn
-                </button>
-                <button
-                  type="button"
-                  className={`btn small ${actionSub === "Visio" ? "cta" : ""}`}
-                  onClick={()=>setActionSub("Visio")}
-                >
-                  📹 Visio
-                </button>
-                <button
-                  type="button"
-                  className={`btn small ${actionSub === "Sur site" ? "cta" : ""}`}
-                  onClick={()=>setActionSub("Sur site")}
-                >
-                  🏢 Sur site
-                </button>
-                <button
-                  type="button"
-                  className={`btn small ${actionSub === "Devis" ? "cta" : ""}`}
-                  onClick={()=>setActionSub("Devis")}
-                >
-                  🧾 Devis
-                </button>
-              </div>
+                  {/* 1) Type d’action (en premier) */}
+                  <div style={{ fontSize: 13, opacity: 0.8, marginBottom: 4 }}>
+                    Type d’action
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
+                    <button
+                      type="button"
+                      className={`btn small${actionCat === "Envoi" ? " cta quick-selected" : ""}`}
+                      onClick={() => {
+                        // On prépare une nouvelle action : type choisi, moyen remis à zéro
+                        setActionCat("Envoi");
+                        setActionSub("");
+                      }}
+                    >
+                      ✉️ Envoi
+                    </button>
 
-              {/* 2) Type d’action rapide */}
-              <div style={{ fontSize: 13, opacity: 0.8, marginBottom: 4 }}>
-                Type d’action
-              </div>
-              <div style={{display:"flex", flexWrap:"wrap", gap:8}}>
-                <button
-                  type="button"
-                  className={`btn small ${actionCat === "Envoi" ? "cta" : ""}`}
-                  onClick={()=>{
-                    if (!actionSub) return alert("Choisis d’abord un moyen de contact.");
-                    setActionCat("Envoi");
-                    addActivity({
-                      type: "Envoi",
-                      subType: actionSub,
-                      result: "En cours",
-                      note: `Envoi via ${actionSub.toLowerCase()}`
-                    });
-                  }}
-                >
-                  ✉️ Envoi
-                </button>
-                <button
-                  type="button"
-                  className={`btn small ${actionCat === "Relance" ? "cta" : ""}`}
-                  onClick={()=>{
-                    if (!actionSub) return alert("Choisis d’abord un moyen de contact (courrier, mail, téléphone…).");
-                    setActionCat("Relance");
-                    addActivity({
-                      type: "Relance",
-                      subType: actionSub,
-                      result: "En cours",
-                      note: `Relance ${actionSub.toLowerCase()}`
-                    });
-                  }}
-                >
-                  🔁 Relance
-                </button>
-                <button
-                  type="button"
-                  className={`btn small ${actionCat === "Rendez-vous" ? "cta" : ""}`}
-                  onClick={()=>{
-                    if (!actionSub) return alert("Choisis d’abord un moyen de contact.");
-                    setActionCat("Rendez-vous");
-                    addActivity({
-                      type: "Rendez-vous",
-                      subType: actionSub,
-                      result: "En cours",
-                      note: `RDV (${actionSub.toLowerCase()})`
-                    });
-                  }}
-                >
-                  📅 Rendez-vous
-                </button>
-                <button
-                  type="button"
-                  className={`btn small ${actionCat === "Événement" ? "cta" : ""}`}
-                  onClick={()=>{
-                    if (!actionSub) return alert("Choisis d’abord un moyen de contact.");
-                    setActionCat("Événement");
-                    addActivity({
-                      type: "Événement",
-                      subType: actionSub,
-                      result: "En cours",
-                      note: `Événement (${actionSub.toLowerCase()})`
-                    });
-                  }}
-                >
-                  🎪 Événement
-                </button>
-                <button
-                  type="button"
-                  className={`btn small ${actionCat === "Autre" ? "cta" : ""}`}
-                  onClick={()=>{
-                    if (!actionSub) return alert("Choisis d’abord un moyen de contact.");
-                    setActionCat("Autre");
-                    addActivity({
-                      type: "Autre",
-                      subType: actionSub,
-                      result: "En cours",
-                      note: `Action autre via ${actionSub.toLowerCase()}`
-                    });
-                  }}
-                >
-                  ✏️ Autre
-                </button>
-              </div>
+                    <button
+                      type="button"
+                      className={`btn small${actionCat === "Relance" ? " cta quick-selected" : ""}`}
+                      onClick={() => {
+                        setActionCat("Relance");
+                        setActionSub("");
+                      }}
+                    >
+                      🔁 Relance
+                    </button>
 
-              {/* Petit récap de ce qui va être enregistré */}
-              <div style={{marginTop:4, fontSize:12, opacity:0.7}}>
-                {actionCat && actionSub
-                  ? <>Prochaine action rapide : <b>{actionCat}</b> via <b>{actionSub}</b></>
-                  : <>Choisis un <b>moyen</b> puis un <b>type d’action</b> pour enregistrer.</>}
-              </div>
-            </div>
+                    <button
+                      type="button"
+                      className={`btn small${actionCat === "Événement" ? " cta quick-selected" : ""}`}
+                      onClick={() => {
+                        setActionCat("Événement");
+                        setActionSub("");
+                      }}
+                    >
+                      🎪 Événement
+                    </button>
 
-            {/* FORMULAIRE DÉTAILLÉ (si tu veux personnaliser) */}
-            <div className="action-row">
-              <label>Ajouter une action (détails)</label>
+                    <button
+                      type="button"
+                      className={`btn small${actionCat === "Autre" ? " cta quick-selected" : ""}`}
+                      onClick={() => {
+                        setActionCat("Autre");
+                        setActionSub("");
+                      }}
+                    >
+                      ✏️ Autre
+                    </button>
+                  </div>
 
-              {/* Juste la catégorie d’action */}
-              <div style={{marginBottom:8}}>
-                <select
-                  value={actionCat}
-                  onChange={e=>setActionCat(e.target.value)}
-                >
-                  <option value="">— Catégorie —</option>
-                  {Object.keys(ACTIONS).map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
-              </div>
+                  {/* 2) Moyen de contact (après) */}
+                  <div style={{ fontSize: 13, opacity: 0.8, marginBottom: 4 }}>
+                    Moyen de contact
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    {[
+                      "Courrier",
+                      "Mail",
+                      "Téléphone",
+                      "SMS",
+                      "LinkedIn",
+                      "Visio",
+                      "Sur site",
+                      "Devis"
+                    ].map((chan) => {
+                      const label =
+                        chan === "Courrier"  ? "📨 Courrier"  :
+                        chan === "Mail"      ? "✉️ Mail"      :
+                        chan === "Téléphone" ? "📞 Téléphone" :
+                        chan === "SMS"       ? "💬 SMS"       :
+                        chan === "LinkedIn"  ? "🔗 LinkedIn"  :
+                        chan === "Visio"     ? "📹 Visio"     :
+                        chan === "Sur site"  ? "🏢 Sur site"  :
+                        /* Devis */            "🧾 Devis";
 
-              {/* Résultat + note */}
-              <div className="cols-2" style={{marginTop:8}}>
-                <div>
-                  <select
-                    value={actionResult}
-                    onChange={e=>setActionResult(e.target.value)}
-                  >
-                    <option>En cours</option>
-                    <option>OK</option>
-                    <option>NR</option>
-                    <option>Refus</option>
-                  </select>
+                      return (
+                        <button
+                          key={chan}
+                          type="button"
+                          className={`btn small${actionSub === chan ? " cta quick-selected" : ""}`}
+                          onClick={() => {
+                            const sub = chan;
+                            setActionSub(sub);
+
+                            // si aucun type n’a été choisi, on ne crée pas l’action
+                            if (!actionCat) {
+                              alert("Commence par choisir un type d’action.");
+                              return;
+                            }
+
+                            const low = sub.toLowerCase();
+                            let note;
+                            if (actionCat === "Envoi")              note = `Envoi via ${low}`;
+                            else if (actionCat === "Relance")       note = `Relance ${low}`;
+                            else if (actionCat === "Rendez-vous")   note = `RDV (${low})`;
+                            else if (actionCat === "Événement")     note = `Événement (${low})`;
+                            else                                    note = `Action autre via ${low}`;
+
+                            // 👉 C’est ici seulement que l’action est réellement ajoutée
+                            addActivity({
+                              type: actionCat,
+                              subType: sub,
+                              result: "En cours",
+                              note
+                            });
+                          }}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-                <div>
-                  <input
-                    placeholder="Note (optionnelle)"
-                    value={actionNote}
-                    onChange={e=>setActionNote(e.target.value)}
-                  />
-                </div>
-              </div>
 
-              {/* Bouton d’ajout */}
-              <div style={{marginTop:8, display:"flex", justifyContent:"flex-end"}}>
-                <button
-                  type="button"
-                  className="btn small"
-                  onClick={()=>{
-                    if(!actionCat) return alert("Choisis une catégorie d’action.");
-                    addActivity({
-                      type: actionCat,
-                      subType: "",
-                      result: actionResult,
-                      note: actionNote.trim()
-                    });
-                  }}
-                >
-                  + Ajouter à la timeline
-                </button>
-              </div>
-            </div>
+
 
             {/* TIMELINE HORIZONTALE */}
-            <div className={`timeline-h ${tlCondensed ? "condensed":""}`}>
+            <div className={`timeline-h ${tlCondensed ? "condensed" : ""}`}>
               {filteredTimeline.length ? (
                 <ul className="timeline-h-list">
-                  {filteredTimeline.map(a => (
-                    <li
-                      key={a.id}
-                      className={`timeline-card t-${(a.type||"").toLowerCase().replace(/[èéê]/g,'e').replace(/\W+/g,'-')} r-${(a.result||"en-attente").toLowerCase().replace(/\s+/g,'-')}`}
-                    >
-                      <div className="tl-header">
-                        <span className="tl-type">
-                          {a.type}{a.subType ? " · "+a.subType : ""}
-                        </span>
-                        <span className={`badge result-${(a.result||"en-attente").toLowerCase().replace(/\s+/g,'-')}`}>
-                          {a.result || "En cours"}
-                        </span>
-                      </div>
+                  {filteredTimeline.map(a => {
+                    const rawNote   = (a.note || "").trim();
+                    const noteLower = rawNote.toLowerCase();
+                    const typeLower = (a.type || "").toLowerCase();
+                    const subLower  = (a.subType || "").toLowerCase();
 
-                      <div className="tl-date">
-                        {new Date(a.dateISO).toLocaleString()}
-                      </div>
+                    // On masque les notes "automatiques" (doublons d'info)
+                    const isAutoNote =
+                      (typeLower === "relance"     && noteLower === `relance ${subLower}`) ||
+                      (typeLower === "envoi"       && noteLower === `envoi via ${subLower}`) ||
+                      (typeLower === "rendez-vous" && noteLower === `rdv (${subLower})`) ||
+                      (typeLower === "événement"   && noteLower === `événement (${subLower})`) ||
+                      (typeLower === "autre"       && noteLower === `action autre via ${subLower}`);
 
-                      {!tlCondensed && (
-                        <div className="tl-footer">
-                          {a.note && <div className="tl-note">{a.note}</div>}
-                          <button
-                            type="button"
-                            className="tl-trash"
-                            onClick={() => deleteActivity(a.id)}
-                            title="Supprimer cette action"
-                          >
-                            🗑️
-                          </button>
+                    const showNote = rawNote && !isAutoNote;
+
+                    return (
+                      <li
+                        key={a.id}
+                        className={
+                          "timeline-card " +
+                          (a.type === "Relance" ? "t-relance" :
+                          a.type === "Rendez-vous" ? "t-rendez-vous" :
+                          a.type === "Envoi" ? "t-envoi" :
+                          a.type === "Événement" ? "t-evenement" : "t-autre")
+                        }
+                      >
+                       <div className="tl-header" style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                        <div>
+                          <div className="tl-type">
+                            {a.type}{a.subType ? " · " + a.subType : ""}
+                          </div>
+                          <div className="tl-date">
+                            {new Date(a.dateISO).toLocaleString("fr-FR")}
+                          </div>
                         </div>
-                      )}
-                    </li>
-                  ))}
+
+                        <button
+                          type="button"
+                          className="btn small danger"
+                          onClick={() => deleteActivity(a.id)}
+                          aria-label="Supprimer l’action"
+                          title="Supprimer l’action"
+                          style={{ marginLeft: 8, padding: "4px 6px", lineHeight:"1" }}
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                        {showNote && <div className="tl-note">{a.note}</div>}
+                      </li>
+                    );
+                  })}
                 </ul>
               ) : (
-                <div style={{opacity:.7}}>Aucune action pour l’instant.</div>
+                <div style={{ opacity: .7 }}>Aucune action pour l’instant.</div>
               )}
             </div>
+
 
             {/* Montant potentiel seulement */}
             <div style={{marginTop:16}}>
@@ -1467,6 +1629,126 @@ const addActivity = ({ type, subType = "", result = "En cours", note = "" }) => 
         </div>
       </section>
 
+      {/* Modale création de rendez-vous */}
+      {showRdvModal && (
+        <div
+          className="modal-backdrop"
+          onClick={() => setShowRdvModal(false)}
+        >
+          <div
+            className="modal solid calendar-modal"
+            onClick={e => e.stopPropagation()}
+            style={{ maxWidth: 900, width: "95%" }}
+          >
+            <div className="modal-head">
+              <h3>Planifier un rendez-vous</h3>
+              <div className="modal-context">
+                {entreprise.nom || "Aucune entreprise sélectionnée"}
+              </div>
+            </div>
+
+            <div className="modal-body">
+              {/* Date + heure */}
+              <div className="cols-2" style={{ marginBottom: 12 }}>
+                <div>
+                  <label>Date du rendez-vous</label>
+                  <input
+                    type="date"
+                    value={entreprise.rdvDate || ""}
+                    onChange={e => setField("rdvDate", e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label>Heure du rendez-vous</label>
+                  <input
+                    type="time"
+                    value={entreprise.rdvHeure || ""}
+                    onChange={e => setField("rdvHeure", e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Lieu du rendez-vous */}
+              <label>Lieu du rendez-vous</label>
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: 8,
+                  marginBottom: 6,
+                  marginTop: 4
+                }}
+              >
+                {/* Sur site = adresse de l’entreprise */}
+                <button
+                  type="button"
+                  className="btn small"
+                  onClick={() =>
+                    setField(
+                      "rdvLieu",
+                      `${entreprise.adresse || ""} ${entreprise.codePostal || ""} ${entreprise.ville || ""}`.trim()
+                    )
+                  }
+                >
+                  🏢 Sur site
+                </button>
+                <button
+                  type="button"
+                  className="btn small"
+                  onClick={() => setField("rdvLieu", "Au chantier")}
+                >
+                  🛠️ Au chantier
+                </button>
+                <button
+                  type="button"
+                  className="btn small"
+                  onClick={() => setField("rdvLieu", "")}
+                >
+                  📍 Autre lieu de rendez-vous
+                </button>
+              </div>
+
+              <input
+                value={entreprise.rdvLieu || ""}
+                onChange={e => setField("rdvLieu", e.target.value)}
+                placeholder="Adresse précise, visio, lieu de rencontre…"
+              />
+
+              {/* Agenda Google visible dans la fenêtre */}
+              <div style={{ marginTop: 12 }}>
+                <iframe
+                  src={miniAgendaUrl || G_CAL_EMBED_BASE}
+                  style={{ border: 0, width: "100%", borderRadius: 12 }}
+                  height="400"
+                  frameBorder="0"
+                  scrolling="no"
+                  loading="lazy"
+                  title="Agenda Borde Ta Voile"
+                />
+              </div>
+            </div>
+
+            <div className="modal-actions">
+              <button
+                className="btn"
+                onClick={() => setShowRdvModal(false)}
+              >
+                Annuler
+              </button>
+              <button
+                className="btn cta"
+                onClick={() => {
+                  openGCalRdv();      // ouvre Google Agenda + ajoute l’action
+                  setShowRdvModal(false);
+                }}
+              >
+                Créer dans Google Agenda
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Barre d’action */}
       <div className="fixed-actionbar">
         <button className="btn" onClick={exportCSV}>⬇️ Exporter CSV</button>
@@ -1547,6 +1829,41 @@ const addActivity = ({ type, subType = "", result = "En cours", note = "" }) => 
               <button className="btn" onClick={handleDupContinue} title="Entrée = Continuer">Continuer</button>
             </div>
             <div style={{opacity:.7,fontSize:12,marginTop:6}}>Astuce : appuie sur <b>Entrée</b> pour Continuer.</div>
+          </div>
+        </div>
+      )}
+      {/* Modale Agenda RDV (Google Agenda) */}
+      {showRdvCalendar && (
+        <div className="modal-backdrop" onClick={() => setShowRdvCalendar(false)}>
+          <div className="modal solid calendar-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-head">
+              <h3>Google Agenda — bordetavoile@gmail.com</h3>
+              {entreprise.rdvDate && (
+                <div className="modal-context">
+                  Autour du{" "}
+                  {new Date(entreprise.rdvDate + "T00:00:00").toLocaleDateString("fr-FR")}
+                </div>
+              )}
+            </div>
+
+            <iframe
+              src={
+                miniAgendaUrl ||
+                "https://calendar.google.com/calendar/embed?src=bordetavoile%40gmail.com&ctz=Europe%2FParis"
+              }
+              style={{ border: 0, width: "100%", borderRadius: 12 }}
+              height="600"
+              frameBorder="0"
+              scrolling="no"
+              loading="lazy"
+              title="Agenda Borde Ta Voile"
+            />
+
+            <div className="modal-actions centered">
+              <button className="btn" onClick={() => setShowRdvCalendar(false)}>
+                Fermer
+              </button>
+            </div>
           </div>
         </div>
       )}

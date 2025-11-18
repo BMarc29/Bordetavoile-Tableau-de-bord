@@ -111,6 +111,13 @@ input:focus,select:focus,textarea:focus{
 .btn:hover{ background:var(--acc-2); transform:translateY(-1px); } .btn:active{ transform:translateY(0); }
 .btn.small{ font-size:13px; padding:6px 10px; } .btn.danger{ background:#D56B6B; color:#fff; } .btn.danger:hover{ filter:brightness(1.02); }
 
+/* Mise en avant de la combinaison choisie (journal de bord) */
+.btn.quick-selected{
+  box-shadow:
+    0 0 0 2px rgba(234,242,245,.95),
+    0 0 14px rgba(143,197,208,.85);
+}
+
 /* Table */
 .table{ width:100%; border-collapse:collapse; }
 .table th{ text-align:left; font-weight:600; padding:10px; background:rgba(255,255,255,.08); color:var(--ink); }
@@ -797,4 +804,17 @@ body.logged-out header {
 .timeline-card .tl-trash:hover {
   opacity: 1;
   transform: translateY(-1px);
+}
+
+.mini-agenda{
+  margin-top: 8px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  background: rgba(0,0,0,0.15);
+}
+
+.mini-agenda iframe{
+  display:block;
 }
