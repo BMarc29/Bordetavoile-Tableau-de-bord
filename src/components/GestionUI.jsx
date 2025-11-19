@@ -722,22 +722,425 @@ const store = {
 };
 
 /* ---------- composant ---------- */
-function MobileUI({ entreprise, setField }) {
-  return (
-    <div className="mobile-wrapper">
-      <h2>📱 Mode mobile</h2>
-      <p>Ici tu peux construire une interface simplifiée pour téléphone.</p>
+/* ========= MOBILE UI (début) ========= */
+function MobileUI({
+  entreprise,
+  entreprises,
+  setField,
+  onSelectEntreprise,
+  onNewEntreprise,
+  onSaveEntreprise,
+  onOpenContactModal,
+  onQuickAction,
+  onCreateRdv,
+}) {
+  const { useState, useMemo } = React;
+  const [tab, setTab] = useState("list"); // "list" | "add" | "contacts" | "actions"
+  const [search, setSearch] = useState("");
+  const [note, setNote] = useState("");
+
+  const filtered = useMemo(() => {
+    const q = (search || "").toLowerCase().trim();
+    if (!q) return entreprises;
+    return (entreprises || []).filter((e) =>
+      (e.nom || "").toLowerCase().includes(q)
+    );
+  }, [entreprises, search]);
+
+  const hasEntreprise = entreprise && (entreprise.nom || "").trim();
+
+  // dictée vocale (si dispo)
+  const startDictation = () => {
+    const SR =
+      window.SpeechRecognition || window.webkitSpeechRecognition || null;
+    if (!SR) {
+      alert(
+        "La dictée vocale n’est pas disponible sur ce navigateur. Essaie avec Chrome sur mobile 😉"
+      );
+      return;
+    }
+    const rec = new SR();
+    rec.lang = "fr-FR";
+    rec.interimResults = false;
+    rec.maxAlternatives = 1;
+    rec.onresult = (e) => {
+      const txt = e.results[0][0].transcript;
+      setNote((prev) => (prev ? prev + " " + txt : txt));
+    };
+    rec.onerror = () => {
+      alert("Erreur de reconnaissance vocale.");
+    };
+    rec.start();
+  };
+
+  const handleQuick = (kind) => {
+    if (!hasEntreprise) {
+      alert("Sélectionne d’abord une entreprise dans la liste.");
+      return;
+    }
+    onQuickAction && onQuickAction(kind, note);
+    setNote("");
+  };
+
+  const openRdv = () => {
+    if (!hasEntreprise) {
+      alert("Sélectionne d’abord une entreprise.");
+      return;
+    }
+    onCreateRdv && onCreateRdv();
+  };
+
+  const renderList = () => (
+    <div className="mobile-section">
+      <h2 className="mobile-title">Entreprises</h2>
+      <input
+        className="mobile-input"
+        placeholder="Rechercher une entreprise…"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+      />
+
+      <div className="mobile-list">
+        {filtered.map((e) => (
+          <button
+            key={e.id || e.nom}
+            className={
+              "mobile-card" +
+              (entreprise && e.id === entreprise.id ? " selected" : "")
+            }
+            onClick={() => {
+              onSelectEntreprise && onSelectEntreprise(e);
+              setTab("add");
+            }}
+          >
+            <div className="mobile-card-main">
+              <div className="mobile-card-name">{e.nom || "Sans nom"}</div>
+              <div className="mobile-card-city">{e.ville || "Ville inconnue"}</div>
+            </div>
+            <div className="mobile-card-meta">
+              <div className="mobile-chip">
+                {e.statut || "En prospection"}
+              </div>
+              {e.prochaineAction && (
+                <div className="mobile-next">
+                  {e.prochaineAction}
+                  {e.dateProchaine ? ` · ${e.dateProchaine}` : ""}
+                </div>
+              )}
+            </div>
+          </button>
+        ))}
+        {!filtered.length && (
+          <p className="mobile-empty">Aucune entreprise trouvée.</p>
+        )}
+      </div>
+    </div>
+  );
+
+  const renderAdd = () => (
+    <div className="mobile-section">
+      <h2 className="mobile-title">
+        {entreprise.id ? "Fiche entreprise" : "Nouvelle entreprise"}
+      </h2>
 
       <label>Nom de l’entreprise</label>
       <input
+        className="mobile-input"
         value={entreprise.nom}
-        onChange={e => setField("nom", e.target.value)}
+        onChange={(e) => setField("nom", e.target.value)}
+        placeholder="ex. BORDE TA VOILE"
       />
 
-      {/* Ajoute ici les blocs que tu veux afficher sur mobile */}
+      <label>Adresse</label>
+      <input
+        className="mobile-input"
+        value={entreprise.adresse}
+        onChange={(e) => setField("adresse", e.target.value)}
+        placeholder="N°, Rue"
+      />
+
+      <label>Code postal</label>
+      <input
+        className="mobile-input"
+        value={entreprise.codePostal}
+        onChange={(e) => setField("codePostal", e.target.value)}
+        placeholder="29620"
+      />
+
+      <label>Ville</label>
+      <input
+        className="mobile-input"
+        value={entreprise.ville}
+        onChange={(e) => setField("ville", e.target.value)}
+        placeholder="Locquirec"
+      />
+
+      <label>E-mail</label>
+      <input
+        className="mobile-input"
+        value={entreprise.email}
+        onChange={(e) => setField("email", e.target.value)}
+        placeholder="contact@entreprise.fr"
+      />
+
+      <label>Téléphone</label>
+      <input
+        className="mobile-input"
+        value={entreprise.telephone}
+        onChange={(e) => setField("telephone", e.target.value)}
+        placeholder="02 00 00 00 00"
+      />
+
+      <label>Prochaine action</label>
+      <input
+        className="mobile-input"
+        value={entreprise.prochaineAction || ""}
+        onChange={(e) => setField("prochaineAction", e.target.value)}
+        placeholder="ex. Relance téléphone"
+      />
+
+      <label>Date de relance</label>
+      <input
+        className="mobile-input"
+        type="date"
+        value={entreprise.dateProchaine || ""}
+        onChange={(e) => setField("dateProchaine", e.target.value)}
+      />
+
+      <div className="mobile-actions-row">
+        <button className="btn" onClick={onNewEntreprise}>
+          Nouvelle fiche
+        </button>
+        <button className="btn cta" onClick={onSaveEntreprise}>
+          Enregistrer
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderContacts = () => {
+    const list = entreprise.contacts || [];
+    const hasEntreprise = entreprise && (entreprise.nom || "").trim();
+
+    return (
+      <div className="mobile-section">
+        <h2 className="mobile-title">
+          Contacts {hasEntreprise ? `— ${entreprise.nom}` : ""}
+        </h2>
+        {!hasEntreprise && (
+          <p className="mobile-empty">
+            Sélectionne d’abord une entreprise dans l’onglet “Liste”.
+          </p>
+        )}
+
+        {hasEntreprise && (
+          <>
+            <div className="mobile-list">
+              {list.map((c) => {
+                const fullName =
+                  (c.prenom || "") + " " + (c.nom || "");
+                return (
+                  <div key={c.id} className="mobile-card">
+                    <div className="mobile-card-main">
+                      <div className="mobile-card-name">
+                        {fullName.trim() || "Sans nom"}
+                      </div>
+                      {c.fonction && (
+                        <div className="mobile-card-city">
+                          {c.fonction}
+                        </div>
+                      )}
+                    </div>
+                    <div className="mobile-contacts-actions">
+                      {c.tel && (
+                        <a href={`tel:${c.tel}`} className="mobile-icon-btn">
+                          📞
+                        </a>
+                      )}
+                      {c.tel && (
+                        <a href={`sms:${c.tel}`} className="mobile-icon-btn">
+                          💬
+                        </a>
+                      )}
+                      {c.email && (
+                        <a
+                          href={`mailto:${c.email}`}
+                          className="mobile-icon-btn"
+                        >
+                          ✉️
+                        </a>
+                      )}
+                      {c.linkedin && (
+                        <a
+                          href={c.linkedin}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mobile-icon-btn"
+                        >
+                          💼
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              {!list.length && (
+                <p className="mobile-empty">
+                  Aucun contact pour cette entreprise.
+                </p>
+              )}
+            </div>
+
+            <div className="mobile-actions-row">
+              <button
+                className="btn cta"
+                onClick={() => onOpenContactModal && onOpenContactModal(null)}
+              >
+                + Ajouter un contact
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
+
+  const renderActions = () => {
+    const acts = (entreprise.activities || []).slice(0, 4);
+
+    return (
+      <div className="mobile-section">
+        <h2 className="mobile-title">
+          Suivi & actions {hasEntreprise ? `— ${entreprise.nom}` : ""}
+        </h2>
+
+        {!hasEntreprise && (
+          <p className="mobile-empty">
+            Sélectionne d’abord une entreprise dans l’onglet “Liste”.
+          </p>
+        )}
+
+        {hasEntreprise && (
+          <>
+            {/* Dernières actions */}
+            <div className="mobile-subtitle">Dernières actions</div>
+            <div className="mobile-list">
+              {acts.map((a) => (
+                <div key={a.id} className="mobile-card">
+                  <div className="mobile-card-main">
+                    <div className="mobile-card-name">
+                      {a.type}
+                      {a.subType ? ` · ${a.subType}` : ""}
+                    </div>
+                    <div className="mobile-card-city">
+                      {a.dateISO ? a.dateISO.slice(0, 10) : ""}
+                    </div>
+                  </div>
+                  {a.note && (
+                    <div className="mobile-card-note">{a.note}</div>
+                  )}
+                </div>
+              ))}
+              {!acts.length && (
+                <p className="mobile-empty">
+                  Aucune action pour l’instant.
+                </p>
+              )}
+            </div>
+
+            {/* Actions rapides */}
+            <div className="mobile-subtitle">Ajouter une action rapide</div>
+            <div className="mobile-quick-grid">
+              <button
+                className="btn mobile-quick"
+                onClick={() => handleQuick("mail")}
+              >
+                ✉️ Mail
+              </button>
+              <button
+                className="btn mobile-quick"
+                onClick={() => handleQuick("tel")}
+              >
+                📞 Téléphone
+              </button>
+              <button
+                className="btn mobile-quick"
+                onClick={() => handleQuick("sms")}
+              >
+                💬 SMS
+              </button>
+              <button
+                className="btn mobile-quick"
+                onClick={() => handleQuick("linkedin")}
+              >
+                💼 LinkedIn
+              </button>
+            </div>
+
+            <label>Note (optionnel)</label>
+            <textarea
+              className="mobile-input"
+              rows={3}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Ex : rappel téléphonique, interlocuteur, décision, etc."
+            />
+
+            <div className="mobile-actions-row">
+              <button className="btn" type="button" onClick={startDictation}>
+                🎙 Dicter
+              </button>
+              <button className="btn" type="button" onClick={openRdv}>
+                📅 Rendez-vous
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
+
+  let content = null;
+  if (tab === "list") content = renderList();
+  else if (tab === "add") content = renderAdd();
+  else if (tab === "contacts") content = renderContacts();
+  else if (tab === "actions") content = renderActions();
+
+  return (
+    <div className="mobile-shell">
+      {content}
+
+      <nav className="mobile-nav">
+        <button
+          className={"mobile-nav-btn" + (tab === "list" ? " active" : "")}
+          onClick={() => setTab("list")}
+        >
+          🔍<span>Liste</span>
+        </button>
+        <button
+          className={"mobile-nav-btn" + (tab === "add" ? " active" : "")}
+          onClick={() => setTab("add")}
+        >
+          ➕<span>Ajouter</span>
+        </button>
+        <button
+          className={"mobile-nav-btn" + (tab === "contacts" ? " active" : "")}
+          onClick={() => setTab("contacts")}
+        >
+          👤<span>Contacts</span>
+        </button>
+        <button
+          className={"mobile-nav-btn" + (tab === "actions" ? " active" : "")}
+          onClick={() => setTab("actions")}
+        >
+          🕓<span>Actions</span>
+        </button>
+      </nav>
     </div>
   );
 }
+/* ========= MOBILE UI (fin) ========= */
+
 function GestionUI({ isMobile }) {
   const empty = {
     id:null,
