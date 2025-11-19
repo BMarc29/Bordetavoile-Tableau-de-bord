@@ -594,9 +594,6 @@ function UserAdminModal({
       </div>
     </div>
   );
-}
-
-
 
   /* ---- connecté : on affiche la barre utilisateur + ton UI de prospection ---- */
 
@@ -635,6 +632,7 @@ function UserAdminModal({
       )}
     </>
   );
+}
 
 /* ---------- Montage React ---------- */
 
