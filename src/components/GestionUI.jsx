@@ -1,7 +1,44 @@
-import { LoginScreen } from "../../renderer";
-
 /* ==== src/components/GestionUI.jsx (V2.2 – Export CSV + filtre par taille) ==== */
 const { useState, useEffect, useMemo } = React;
+
+// Ecran de connexion simple (à améliorer plus tard si besoin)
+function LoginScreen({ users, onLogin, onCreateFirstUser, onRegisterRequest }) {
+  return (
+    <div className="login-screen">
+      <h1>BORDE TA VOILE</h1>
+      <p>Connexion en cours de mise en place.</p>
+
+      <div style={{ marginTop: "1rem" }}>
+        {/* Bouton pour créer le premier utilisateur si aucun compte */}
+        {users && users.length === 0 && onCreateFirstUser && (
+          <button onClick={onCreateFirstUser}>
+            Créer mon premier compte
+          </button>
+        )}
+
+        {/* Bouton pour se connecter avec un utilisateur existant */}
+        {users && users.length > 0 && onLogin && (
+          <button
+            onClick={() => onLogin(users[0])}
+            style={{ marginLeft: "0.5rem" }}
+          >
+            Continuer
+          </button>
+        )}
+
+        {/* Lien pour demander une inscription si tu veux l’utiliser plus tard */}
+        {onRegisterRequest && (
+          <button
+            onClick={onRegisterRequest}
+            style={{ marginLeft: "0.5rem" }}
+          >
+            Demander un accès
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function useIsMobile() {
   /* ---------- Supabase (auth utilisateurs) ---------- */
