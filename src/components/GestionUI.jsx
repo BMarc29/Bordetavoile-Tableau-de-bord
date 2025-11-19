@@ -1478,6 +1478,17 @@ function GestionUI({ isMobile }) {
     // Modale de création de rendez-vous
   const [showRdvModal, setShowRdvModal] = useState(false);
 
+// ---------- Données pour la liste de contacts (colonne du milieu) ----------
+  // On s'assure d'avoir toujours un tableau, même si l'entreprise n'a pas encore de contacts
+  const contacts = entreprise.contacts || [];
+
+  // Quand on clique sur "Voir" dans la liste des contacts
+  const selectContact = (c) => {
+    if (!c) return;
+    // On ouvre la modale de contact déjà prévue, en pré-remplissant avec ce contact
+    openContactModal(c);
+  };
+
   /* Exposer l'état courant au header / renderer */
   // Expose l'état courant SANS toucher window.btv (verrouillé par Electron)
   useEffect(()=>{
@@ -2173,26 +2184,25 @@ if (isMobileScreen) {
 
           {contacts.length > 0 && (
             <ul className="contact-list">
-              {contacts.map((c) => (
-                <li key={c.id} className="contact-item">
-                  <div>
-                    <strong>{c.name}</strong>
-                    <div className="small">{c.role}</div>
-                    <div className="small">{c.phone}</div>
-                    <div className="small">{c.email}</div>
-                  </div>
-                  <button
-                    className="btn small"
-                    onClick={() => selectContact(c)}
-                  >
-                    Voir
-                  </button>
-                </li>
-              ))}
+              {contacts.map((c) => {
+                const fullName = `${c.prenom || ""} ${c.nom || ""}`.trim() || "Sans nom";
+                return (
+                  <li key={c.id} className="contact-item">
+                    <div>
+                      <strong>{fullName}</strong>
+                      {c.fonction && <div className="small">{c.fonction}</div>}
+                      {c.tel && <div className="small">{c.tel}</div>}
+                      {c.email && <div className="small">{c.email}</div>}
+                    </div>
+                    <button className="btn small" onClick={() => selectContact(c)}>
+                      Voir
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
-
       </div>
     </section>
 
