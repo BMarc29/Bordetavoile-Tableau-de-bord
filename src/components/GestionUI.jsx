@@ -1,6 +1,37 @@
 /* ==== src/components/GestionUI.jsx (V2.2 – Export CSV + filtre par taille) ==== */
 const { useState, useEffect, useMemo } = React;
 
+// Stockage local des utilisateurs (sans Supabase pour l'instant)
+const userStore = {
+  loadUsers() {
+    try {
+      return JSON.parse(localStorage.getItem("btv_users") || "[]");
+    } catch {
+      return [];
+    }
+  },
+
+  saveUsers(users) {
+    try {
+      localStorage.setItem("btv_users", JSON.stringify(users || []));
+    } catch {}
+  },
+
+  getCurrent() {
+    try {
+      return JSON.parse(localStorage.getItem("btv_current_user") || "null");
+    } catch {
+      return null;
+    }
+  },
+
+  setCurrent(user) {
+    try {
+      localStorage.setItem("btv_current_user", JSON.stringify(user));
+    } catch {}
+  },
+};
+
 // Ecran de connexion simple (à améliorer plus tard si besoin)
 function LoginScreen({ users, onLogin, onCreateFirstUser, onRegisterRequest }) {
   return (
