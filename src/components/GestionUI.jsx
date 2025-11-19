@@ -405,7 +405,6 @@ const userApi = {
   }, []);
 }
 
-
 // URL d’intégration Google Calendar (embed de bordetavoile@gmail.com)
 const G_CAL_EMBED_BASE =
   "https://calendar.google.com/calendar/embed?src=bordetavoile%40gmail.com&ctz=Europe%2FParis";
@@ -1800,15 +1799,17 @@ const openGCalRdv = () => {
     };
   };
 
+/* ---------- render ---------- */
+  const isMobileScreen =
+    isMobile ||
+    (typeof window !== "undefined" &&
+      window.innerWidth &&
+      window.innerWidth <= 700);
 
-  /* ---------- render ---------- */
-  if (isMobile) {
-  return <MobileUI entreprise={entreprise} setField={setField} />;
-}
+  if (isMobileScreen) {
+    return <MobileUI entreprise={entreprise} setField={setField} />;
+  }
 
-  return (
-    <div className="app-grid">
-      {/* LEFT */}
       <section className="left">
         <div className="card fill">
           <div className="card-header"><h2 className="card-title">Information Entreprise</h2></div>
