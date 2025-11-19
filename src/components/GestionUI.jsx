@@ -27,6 +27,31 @@ function LoginScreen({ users, onLogin, onCreateFirstUser, onRegisterRequest }) {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
 
+    // 🔑 Mot de passe oublié
+  const handleForgotPassword = async () => {
+    if (!email.trim()) {
+      alert("Entre ton e-mail pour recevoir un lien de réinitialisation.");
+      return;
+    }
+
+    try {
+      const { error } = await window.supabaseClient.auth.resetPasswordForEmail(
+        email.trim(),
+        {
+          redirectTo: "https://bordetavoile-tableau-de-bord.vercel.app/reset",
+        }
+      );
+
+      if (error) {
+        alert("Erreur : " + error.message);
+      } else {
+        alert("Un lien de réinitialisation vient d’être envoyé sur ton e-mail.");
+      }
+    } catch (e) {
+      alert("Erreur inattendue : " + (e.message || e));
+    }
+  };
+
   const reset = () => {
     setName("");
     setEmail("");
@@ -224,7 +249,7 @@ function LoginScreen({ users, onLogin, onCreateFirstUser, onRegisterRequest }) {
           type="button"
           className="btn secondary"
           style={{ marginTop: 12 }}
-          onClick={() => handleForgotPassword(email)}
+          onClick={handleForgotPassword}
         >
           🔑 Mot de passe oublié ?
         </button>
