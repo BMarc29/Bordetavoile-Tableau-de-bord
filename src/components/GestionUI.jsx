@@ -2104,8 +2104,16 @@ if (isMobileScreen) {
                 value={entreprise.sector || ""}
                 onChange={(e) => setField("sector", e.target.value)}
               >
-                {SECTEURS.map((s) => (
-                  <option key={s.value} value={s.value}>{s.label}</option>
+                <option value="">-- Choisir un secteur --</option>
+
+                {Object.entries(SECTEURS).map(([categorie, sousSecteurs]) => (
+                  <optgroup key={categorie} label={categorie}>
+                    {sousSecteurs.map((nom) => (
+                      <option key={`${categorie}-${nom}`} value={nom}>
+                        {nom}
+                      </option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
             </div>
