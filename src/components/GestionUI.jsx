@@ -377,15 +377,32 @@ const userApi = {
       : false
   );
 
-  useEffect(() => {
+    useEffect(() => {
     if (typeof window === "undefined") return;
+
     const mq = window.matchMedia("(max-width: 700px)");
     const handler = (e) => setIsMobile(e.matches);
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
-  }, []);
 
-  return isMobile;
+    // 1) Valeur initiale
+    setIsMobile(mq.matches);
+
+    // 2) Abonnement cross-browser
+    if (mq.addEventListener) {
+      mq.addEventListener("change", handler);
+    } else if (mq.addListener) {
+      // Safari / anciens navigateurs
+      mq.addListener(handler);
+    }
+
+    // 3) Nettoyage
+    return () => {
+      if (mq.removeEventListener) {
+        mq.removeEventListener("change", handler);
+      } else if (mq.removeListener) {
+        mq.removeListener(handler);
+      }
+    };
+  }, []);
 }
 
 
@@ -1139,6 +1156,7 @@ function MobileUI({
     </div>
   );
 }
+
 /* ========= MOBILE UI (fin) ========= */
 
 function GestionUI({ isMobile }) {
