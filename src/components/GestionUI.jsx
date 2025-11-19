@@ -2187,23 +2187,183 @@ return (
   </div>
 );
 
-  // Version bureau (simplifiée pour l’instant)
   return (
-    <div className="app-grid">
-      <section className="left">
-        <div className="card fill">
-          <h2>Mode bureau en cours de réparation 😊</h2>
-          <p>
-            La version mobile fonctionne. On remettra ici toute ton interface
-            complète une fois Supabase bien en place.
-          </p>
-        </div>
-      </section>
+  <div className="app-grid">
 
-      {/* Toast global */}
-      {toast && <div className="toast">{toast}</div>}
-    </div>
-  );
+    {/* ------------ COLONNE GAUCHE : FICHE ENTREPRISE ------------ */}
+    <section className="left">
+      <div className="card fill">
+        <div className="card-header">
+          <h2 className="card-title">Information Entreprise</h2>
+        </div>
+
+        <div className="card-body">
+          <div className="cols-2">
+
+            {/* ----------- COLONNE 1 ----------- */}
+            <div>
+              <label>Nom de l’entreprise</label>
+              <input
+                value={entreprise.name || ""}
+                onChange={(e) => setField("name", e.target.value)}
+              />
+
+              <label>Adresse</label>
+              <input
+                value={entreprise.address || ""}
+                onChange={(e) => setField("address", e.target.value)}
+              />
+
+              <label>Code postal</label>
+              <input
+                value={entreprise.zip || ""}
+                onChange={(e) => setField("zip", e.target.value)}
+              />
+
+              <label>Ville</label>
+              <input
+                value={entreprise.city || ""}
+                onChange={(e) => setField("city", e.target.value)}
+              />
+
+              <label>Secteur</label>
+              <select
+                value={entreprise.sector || ""}
+                onChange={(e) => setField("sector", e.target.value)}
+              >
+                {SECTEURS.map((s) => (
+                  <option key={s.value} value={s.value}>{s.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* ----------- COLONNE 2 ----------- */}
+            <div>
+              <label>Site web</label>
+              <div className="row">
+                <input
+                  value={entreprise.website || ""}
+                  onChange={(e) => setField("website", e.target.value)}
+                />
+                <button
+                  className="btn small"
+                  onClick={() => openURL(entreprise.website)}
+                >
+                  Ouvrir
+                </button>
+              </div>
+
+              <label>Distance (km)</label>
+              <input
+                value={entreprise.distance || ""}
+                onChange={(e) => setField("distance", e.target.value)}
+              />
+
+              <label>Notes</label>
+              <textarea
+                value={entreprise.notes || ""}
+                onChange={(e) => setField("notes", e.target.value)}
+                rows={6}
+              />
+            </div>
+
+          </div>
+        </div>
+
+        <div className="card-footer row">
+          <button className="btn" onClick={handleNew}>Nouveau</button>
+          <button className="btn cta" onClick={handleSave}>Enregistrer</button>
+        </div>
+      </div>
+    </section>
+
+    {/* ------------ COLONNE MILIEU : CONTACTS ------------ */}
+    <section className="middle">
+      <div className="card fill">
+        <div className="card-header row space-between">
+          <h2 className="card-title">Contacts</h2>
+          <button className="btn small" onClick={openContactModal}>Ajouter</button>
+        </div>
+
+        <div className="card-body">
+          {contacts.length === 0 && (
+            <p className="empty">Aucun contact pour cette entreprise.</p>
+          )}
+
+          {contacts.length > 0 && (
+            <ul className="contact-list">
+              {contacts.map((c) => (
+                <li key={c.id} className="contact-item">
+                  <div>
+                    <strong>{c.name}</strong>
+                    <div className="small">{c.role}</div>
+                    <div className="small">{c.phone}</div>
+                    <div className="small">{c.email}</div>
+                  </div>
+                  <button
+                    className="btn small"
+                    onClick={() => selectContact(c)}
+                  >
+                    Voir
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+      </div>
+    </section>
+
+    {/* ------------ COLONNE DROITE : TABLEAU DE BORD ------------ */}
+    <section className="right">
+      <div className="card fill">
+        <div className="card-header">
+          <h2 className="card-title">Tableau de Bord</h2>
+        </div>
+
+        <div className="card-body">
+          <label>Étape de prospection</label>
+          <select
+            value={entreprise.step || ""}
+            onChange={(e) => setField("step", e.target.value)}
+          >
+            {STAT_STEPS.map((s) => (
+              <option key={s.value} value={s.value}>{s.label}</option>
+            ))}
+          </select>
+
+          <label>Dernière action</label>
+          <select
+            value={entreprise.last_action || ""}
+            onChange={(e) => setField("last_action", e.target.value)}
+          >
+            {ACTIONS.map((a) => (
+              <option key={a.value} value={a.value}>{a.label}</option>
+            ))}
+          </select>
+
+          <label>Date de dernière action</label>
+          <input
+            type="date"
+            value={entreprise.last_action_date || ""}
+            onChange={(e) => setField("last_action_date", e.target.value)}
+          />
+
+          <label>Prochaine relance</label>
+          <input
+            type="date"
+            value={entreprise.next_follow || ""}
+            onChange={(e) => setField("next_follow", e.target.value)}
+          />
+        </div>
+      </div>
+    </section>
+
+    {/* ------------ TOAST ------------ */}
+    {toast && <div className="toast">{toast}</div>}
+  </div>
+);
 }
 
 // Exposer pour le renderer si besoin
