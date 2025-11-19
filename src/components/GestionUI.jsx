@@ -2060,20 +2060,6 @@ if (isMobileScreen) {
     />
   );
 }
-
-return (
-  <div className="app-grid">
-    <section className="left">
-      <div className="card fill">
-        <h2>Mode bureau en réparation</h2>
-        <p>Le mobile fonctionne. On réintègrera le HTML ensuite.</p>
-      </div>
-    </section>
-
-    {toast && <div className="toast">{toast}</div>}
-  </div>
-);
-
   return (
   <div className="app-grid">
 
