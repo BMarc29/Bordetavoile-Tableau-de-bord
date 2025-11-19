@@ -915,13 +915,24 @@ const SECTEURS = {
   "Secteur public & Associatif": ["Mairie / Collectivité","Université / École","Association / ONG"]
 };
 
-const ACTIONS = {
-  "Relance": ["Mail", "Téléphone", "LinkedIn"],
-  "Rendez-vous": ["Visio", "Sur site"],
-  "Envoi": ["Devis", "Brochure"],
-  "Événement": ["Salon", "Webinaire"],
-  "Autre": ["Personnalisée"]
-};
+// Types d'actions disponibles (pour les listes déroulantes)
+const ACTIONS = [
+  { value: "Relance > Mail",         label: "Relance – Mail" },
+  { value: "Relance > Téléphone",    label: "Relance – Téléphone" },
+  { value: "Relance > LinkedIn",     label: "Relance – LinkedIn" },
+
+  { value: "Rendez-vous > Visio",    label: "Rendez-vous – Visio" },
+  { value: "Rendez-vous > Sur site", label: "Rendez-vous – Sur site" },
+
+  { value: "Envoi > Devis",          label: "Envoi – Devis" },
+  { value: "Envoi > Brochure",       label: "Envoi – Brochure" },
+
+  { value: "Événement > Salon",      label: "Événement – Salon" },
+  { value: "Événement > Webinaire",  label: "Événement – Webinaire" },
+
+  { value: "Autre > Personnalisée",  label: "Autre – Personnalisée" },
+];
+
 
 /* Délai par type d’action (jours) */
 const ACTION_DELAYS = {
