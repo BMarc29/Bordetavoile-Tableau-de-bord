@@ -2152,27 +2152,40 @@ const openGCalRdv = () => {
   };
 
   /* ---------- render ---------- */
-  const isMobileScreen =
-    isMobile ||
-    (typeof window !== "undefined" &&
-      window.innerWidth &&
-      window.innerWidth <= 700);
+const isMobileScreen =
+  isMobile ||
+  (typeof window !== "undefined" &&
+    window.innerWidth &&
+    window.innerWidth <= 700);
 
-  if (isMobileScreen) {
-    return (
-      <MobileUI
-        entreprise={entreprise}
-        entreprises={entreprises}
-        setField={setField}
-        onSelectEntreprise={(e) => setEntreprise(e)}
-        onNewEntreprise={handleNew}
-        onSaveEntreprise={handleSave}
-        onOpenContactModal={openContactModal}
-        onQuickAction={mobileQuickAction}
-        onCreateRdv={openMobileRdv}
-      />
-    );
-  }
+if (isMobileScreen) {
+  return (
+    <MobileUI
+      entreprise={entreprise}
+      entreprises={entreprises}
+      setField={setField}
+      onSelectEntreprise={(e) => setEntreprise(e)}
+      onNewEntreprise={handleNew}
+      onSaveEntreprise={handleSave}
+      onOpenContactModal={openContactModal}
+      onQuickAction={mobileQuickAction}
+      onCreateRdv={openMobileRdv}
+    />
+  );
+}
+
+return (
+  <div className="app-grid">
+    <section className="left">
+      <div className="card fill">
+        <h2>Mode bureau en réparation</h2>
+        <p>Le mobile fonctionne. On réintègrera le HTML ensuite.</p>
+      </div>
+    </section>
+
+    {toast && <div className="toast">{toast}</div>}
+  </div>
+);
 
   // Version bureau (simplifiée pour l’instant)
   return (
