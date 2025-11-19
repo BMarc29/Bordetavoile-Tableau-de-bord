@@ -2180,8 +2180,8 @@ if (isMobileScreen) {
       </div>
     </section>
 
-    {/* ------------ COLONNE MILIEU : CONTACTS ------------ */}
-    <section className="middle">
+{/* ------------ COLONNE DROITE BASSE : CONTACTS ------------ */}
+    <section className="right-under">
       <div className="card fill">
         <div className="card-header row space-between">
           <h2 className="card-title">Contacts</h2>
@@ -2221,7 +2221,8 @@ if (isMobileScreen) {
     <section className="right">
       <div className="card fill">
         <div className="card-header">
-          <h2 className="card-title">Tableau de Bord</h2>
+            <h2 className="card-title">Suivi du démarchage</h2>
+
         </div>
 
         <div className="card-body">
