@@ -134,14 +134,15 @@ function LoginScreen({ users, onLogin, onCreateFirstUser, onRegisterRequest }) {
               >
                 🔐 Se connecter
               </button>
-              <button
-                type="button"
-                className={mode === "request" ? "btn cta" : "btn secondary"}
-                onClick={() => {
-                  setMode("request");
-                  reset();
-                }}
-              >
+                <button
+                  type="button"
+                  className={mode === "request" ? "btn cta" : "btn secondary"}
+                  onClick={() => {
+                    setMode("request");
+                    reset();
+                  }}
+                >
+
                 ✉️ Demander un accès
               </button>
             </>
@@ -219,6 +220,14 @@ function LoginScreen({ users, onLogin, onCreateFirstUser, onRegisterRequest }) {
             </button>
           </form>
         )}
+        <button
+          type="button"
+          className="btn secondary"
+          style={{ marginTop: 12 }}
+          onClick={() => handleForgotPassword(email)}
+        >
+          🔑 Mot de passe oublié ?
+        </button>
 
         {/* Demande d’accès */}
         {mode === "request" && (
@@ -734,6 +743,22 @@ const handleLogin = async ({ email, password }) => {
     alert("Connexion impossible : " + (e.message || e));
   }
 };
+async function handleForgotPassword(email) {
+  if (!email.trim()) {
+    alert("Entre ton e-mail pour recevoir un lien de réinitialisation.");
+    return;
+  }
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: "https://bordetavoile-tableau-de-bord.vercel.app/reset",
+  });
+
+  if (error) {
+    alert("Erreur : " + error.message);
+  } else {
+    alert("Un lien de réinitialisation vient d’être envoyé !");
+  }
+}
 
 const handleLogout = async () => {
   if (!confirm("Se déconnecter ?")) return;
