@@ -32,39 +32,227 @@ const userStore = {
   },
 };
 
-// Ecran de connexion simple (à améliorer plus tard si besoin)
+// Écran de connexion "local" (sans Supabase pour l'instant)
 function LoginScreen({ users, onLogin, onCreateFirstUser, onRegisterRequest }) {
+  const hasUsers = users && users.length > 0;
+  const [mode, setMode] = useState(hasUsers ? "login" : "first"); // "first" | "login" | "request"
+  const [selectedId, setSelectedId] = useState(hasUsers ? users[0].id : null);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+
+  const handleFirstSubmit = (e) => {
+    e.preventDefault();
+    if (!name.trim()) {
+      alert("Merci d’indiquer au moins un nom.");
+      return;
+    }
+    const user = {
+      id: Date.now(),
+      name: name.trim(),
+      email: email.trim(),
+      role: "admin",
+      status: "active",
+    };
+    onCreateFirstUser && onCreateFirstUser(user);
+  };
+
+  const handleLoginSubmit = (e) => {
+    e.preventDefault();
+    if (!hasUsers) return;
+    const user =
+      users.find((u) => String(u.id) === String(selectedId)) || users[0];
+    onLogin && onLogin(user);
+  };
+
+  const handleRequestSubmit = (e) => {
+    e.preventDefault();
+    if (!name.trim() || !email.trim()) {
+      alert("Nom et e-mail sont requis pour la demande d’accès.");
+      return;
+    }
+    const user = {
+      id: Date.now(),
+      name: name.trim(),
+      email: email.trim(),
+      role: "user",
+      status: "pending",
+    };
+    onRegisterRequest && onRegisterRequest(user);
+    setMessage(
+      "Demande enregistrée. Un administrateur devra valider ce compte."
+    );
+    setMode("login");
+  };
+
   return (
-    <div className="login-screen">
-      <h1>BORDE TA VOILE</h1>
-      <p>Connexion en cours de mise en place.</p>
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "24px",
+      }}
+    >
+      <div
+        style={{
+          maxWidth: 480,
+          width: "100%",
+          background: "rgba(0,0,0,0.25)",
+          borderRadius: 18,
+          padding: 24,
+          boxShadow: "0 10px 24px rgba(0,0,0,0.35)",
+        }}
+      >
+        <h1 style={{ marginTop: 0, marginBottom: 8, fontSize: 28 }}>
+          BORDE TA VOILE
+        </h1>
+        <p style={{ marginTop: 0, marginBottom: 16, opacity: 0.85 }}>
+          Gestion des entreprises — espace sécurisé
+        </p>
 
-      <div style={{ marginTop: "1rem" }}>
-        {/* Bouton pour créer le premier utilisateur si aucun compte */}
-        {users && users.length === 0 && onCreateFirstUser && (
-          <button onClick={onCreateFirstUser}>
-            Créer mon premier compte
+        {/* Onglets */}
+        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+          {!hasUsers && (
+            <button
+              type="button"
+              className="btn small"
+              onClick={() => setMode("first")}
+            >
+              👤 Créer mon premier compte
+            </button>
+          )}
+          {hasUsers && (
+            <button
+              type="button"
+              className="btn small"
+              onClick={() => setMode("login")}
+            >
+              🔐 Se connecter
+            </button>
+          )}
+          <button
+            type="button"
+            className="btn small"
+            onClick={() => setMode("request")}
+          >
+            ✉️ Demander un accès
           </button>
+        </div>
+
+        {message && (
+          <div
+            style={{
+              marginBottom: 12,
+              fontSize: 13,
+              color: "#C7D9E0",
+            }}
+          >
+            {message}
+          </div>
         )}
 
-        {/* Bouton pour se connecter avec un utilisateur existant */}
-        {users && users.length > 0 && onLogin && (
-          <button
-            onClick={() => onLogin(users[0])}
-            style={{ marginLeft: "0.5rem" }}
-          >
-            Continuer
-          </button>
+        {/* Mode : premier compte */}
+        {mode === "first" && (
+          <form onSubmit={handleFirstSubmit}>
+            <p style={{ fontSize: 14, marginTop: 0 }}>
+              Aucun compte n’existe encore. Crée ton compte administrateur.
+            </p>
+            <label>Nom complet</label>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Ex : Marc B."
+            />
+            <label style={{ marginTop: 8 }}>E-mail (facultatif)</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="ton.email@exemple.fr"
+            />
+            <div
+              style={{
+                marginTop: 14,
+                display: "flex",
+                justifyContent: "flex-end",
+              }}
+            >
+              <button type="submit" className="btn cta">
+                Créer mon premier compte
+              </button>
+            </div>
+          </form>
         )}
 
-        {/* Lien pour demander une inscription si tu veux l’utiliser plus tard */}
-        {onRegisterRequest && (
-          <button
-            onClick={onRegisterRequest}
-            style={{ marginLeft: "0.5rem" }}
-          >
-            Demander un accès
-          </button>
+        {/* Mode : login simple (choix d’un utilisateur existant) */}
+        {mode === "login" && hasUsers && (
+          <form onSubmit={handleLoginSubmit}>
+            <label>Choisir un utilisateur</label>
+            <select
+              value={selectedId ?? ""}
+              onChange={(e) => setSelectedId(e.target.value)}
+            >
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name} ({u.role || "user"})
+                </option>
+              ))}
+            </select>
+            <div
+              style={{
+                marginTop: 14,
+                display: "flex",
+                justifyContent: "flex-end",
+              }}
+            >
+              <button type="submit" className="btn cta">
+                Continuer
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* Mode : demande d’accès */}
+        {mode === "request" && (
+          <form onSubmit={handleRequestSubmit}>
+            <p style={{ fontSize: 14, marginTop: 0 }}>
+              Tu peux demander un accès, il devra être validé par un
+              administrateur.
+            </p>
+            <label>Nom complet</label>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Nom Prénom"
+            />
+            <label style={{ marginTop: 8 }}>E-mail</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="ton.email@exemple.fr"
+            />
+            <div
+              style={{
+                marginTop: 14,
+                display: "flex",
+                justifyContent: "flex-end",
+              }}
+            >
+              <button type="submit" className="btn cta">
+                Envoyer la demande
+              </button>
+            </div>
+          </form>
+        )}
+
+        {!hasUsers && mode === "login" && (
+          <p style={{ fontSize: 13, marginTop: 12, opacity: 0.8 }}>
+            Aucun utilisateur créé pour l’instant. Utilise d’abord{" "}
+            <b>“Créer mon premier compte”</b>.
+          </p>
         )}
       </div>
     </div>
