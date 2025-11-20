@@ -629,35 +629,6 @@ function UserAdminModal({
     </div>
   );
 }
-/* ---------- Montage React ---------- */
-
-try {
-  window.GestionUI = GestionUI;
-} catch {}
-
-(() => {
-  try {
-    const el = document.getElementById("app");
-    if (!el) throw new Error("#app introuvable");
-    if (!el.__hasApp) {
-      if (!window.React || !window.ReactDOM)
-        throw new Error("React/ReactDOM non chargés");
-      const root = ReactDOM.createRoot(el);
-      root.render(React.createElement(App));
-      el.__hasApp = true;
-      window.dispatchEvent(new CustomEvent("btv:ui-mounted"));
-    }
-  } catch (err) {
-    console.error("Mount error:", err);
-    try {
-      const box = document.getElementById("bootlog");
-      if (box) {
-        box.style.display = "block";
-        box.textContent = "Mount error: " + err.message;
-      }
-    } catch {}
-  }
-})();
 
 /* ---- App racine : gère login + GestionUI ---- */
 function App() {
