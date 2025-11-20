@@ -2176,18 +2176,38 @@ if (isMobileScreen) {
 {/* ------------ COLONNE DROITE : SUIVI + JOURNAL ------------ */}
 <section className="right">
   <div className="card fill">
-    <div className="card-header">
+        <div className="card-header row space-between">
       <h2 className="card-title">
         Suivi du démarchage
         <span className="badge pill" style={{ marginLeft: 8 }}>
           {entreprise.statut || "En prospection"}
         </span>
       </h2>
+
+      <div className="header-actions">
+        <button
+          type="button"
+          className="btn small"
+          onClick={openGCalRdv}
+        >
+          📅 Rendez-vous
+        </button>
+
+        <button
+          type="button"
+          className="btn small secondary"
+          onClick={relancerAuj}
+        >
+          🔁 Relancer aujourd’hui
+        </button>
+      </div>
     </div>
+
 
     <div className="card-body">
       {/* Résumé + stats */}
-            <div className="resume-row">
+              {/* Résumé + stats */}
+      <div className="resume-row">
         <div className="badges">
           <span className="badge pill">Relances : {resume.Relance}</span>
           <span className="badge pill">RDV : {resume.RendezVous}</span>
@@ -2203,9 +2223,8 @@ if (isMobileScreen) {
                 className="progress-fill"
                 style={{
                   width:
-                    STAT_PROGRESS(
-                      entreprise.statut || "En prospection"
-                    ) + "%"
+                    STAT_PROGRESS(entreprise.statut || "En prospection") +
+                    "%"
                 }}
               />
             </div>

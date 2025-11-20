@@ -121,6 +121,11 @@ input:focus,select:focus,textarea:focus{
 .inline-label{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
 .inline-label .hint{ color:var(--muted); font-size:.9rem; }
 
+.small{
+  font-size:.85rem;
+  color:var(--muted);
+}
+
 .interest-row{ display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:10px; margin:2px 0 8px; }
 .interest-range{ width:100%; }
 .value-pill{ background:rgba(0,0,0,.28); color:var(--ink); border-radius:8px; padding:2px 8px; }
@@ -131,6 +136,26 @@ input:focus,select:focus,textarea:focus{
 .btn{ background:var(--acc); color:#1f2d33; border:1px solid transparent; border-radius:12px; padding:9px 14px; font-weight:600; cursor:pointer; transition:transform .15s, background .2s, filter .2s; }
 .btn:hover{ background:var(--acc-2); transform:translateY(-1px); } .btn:active{ transform:translateY(0); }
 .btn.small{ font-size:13px; padding:6px 10px; } .btn.danger{ background:#D56B6B; color:#fff; } .btn.danger:hover{ filter:brightness(1.02); }
+
+/* Variantes pour le suivi de démarchage */
+.btn.secondary{
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--acc);
+}
+.btn.secondary:hover{
+  background: rgba(0,0,0,0.18);
+}
+
+.btn.pill{
+  border-radius: 999px;
+}
+
+/* Boutons dans les en-têtes de cartes */
+.card-header .btn.small{
+  padding: 6px 12px;
+  border-radius: 999px;
+}
 
 /* Mise en avant de la combinaison choisie (journal de bord) */
 .btn.quick-selected{
