@@ -2343,7 +2343,7 @@ if (isMobileScreen) {
         <div className="card-header row space-between">
           <h2 className="card-title">Entreprises</h2>
           <div className="row gap8">
-            <button className="btn small" onClick={createEntreprise}>Nouveau</button>
+            <button className="btn small" onClick={handleNew}>Nouveau</button>
             <button className="btn small" onClick={exportCSV}>Exporter CSV</button>
           </div>
         </div>
