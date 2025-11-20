@@ -628,46 +628,7 @@ function UserAdminModal({
       </div>
     </div>
   );
-
-  /* ---- connecté : on affiche la barre utilisateur + ton UI de prospection ---- */
-
-  return (
-    <>
-      <div className="userbar">
-        <span>
-          Connecté : <strong>{currentUser.name}</strong> ({currentUser.role})
-        </span>
-        <div className="userbar-actions">
-          {currentUser.role === "admin" && (
-            <button
-              className="btn small"
-              onClick={() => setShowUserAdmin(true)}
-            >
-              Utilisateurs
-            </button>
-          )}
-          <button className="btn small" onClick={handleLogout}>
-            Se déconnecter
-          </button>
-        </div>
-      </div>
-
-      {/* 👉 ICI tu gardes ton composant GestionUI existant (mobile + desktop) */}
-      <GestionUI currentUser={currentUser} isMobile={isMobile} />
-
-      {showUserAdmin && (
-        <UserAdminModal
-          users={users}
-          onAddUser={handleAddUser}
-          onDeleteUser={handleDeleteUser}
-          onUpdateUser={handleUpdateUser}
-          onClose={() => setShowUserAdmin(false)}
-        />
-      )}
-    </>
-  );
 }
-
 /* ---------- Montage React ---------- */
 
 try {
