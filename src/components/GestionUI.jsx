@@ -2551,4 +2551,5 @@ try { window.GestionUI = GestionUI; } catch {}
       const box = document.getElementById('bootlog');
       if (box) { box.style.display='block'; box.textContent = 'Mount error: ' + err.message; }
     } catch {}
- 
+    }
+})();
