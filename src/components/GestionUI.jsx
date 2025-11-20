@@ -2035,100 +2035,101 @@ if (isMobileScreen) {
   return (
   <div className="app-grid">
 
-    {/* ------------ COLONNE GAUCHE : FICHE ENTREPRISE ------------ */}
-    <section className="left">
-      <div className="card fill">
-        <div className="card-header">
-          <h2 className="card-title">Information Entreprise</h2>
-        </div>
+ {/* ------------ COLONNE GAUCHE : FICHE ENTREPRISE ------------ */}
+<section className="left">
+  <div className="card fill">
+    <div className="card-header">
+      <h2 className="card-title">Information Entreprise</h2>
+    </div>
 
-        <div className="card-body">
-          <div className="cols-2">
+    <div className="card-body">
+      <div className="cols-2">
 
-            {/* ----------- COLONNE 1 ----------- */}
-            <div>
-              <label>Nom de l’entreprise</label>
-              <input
-                value={entreprise.name || ""}
-                onChange={(e) => setField("name", e.target.value)}
-              />
+        {/* ----------- COLONNE 1 ----------- */}
+        <div>
+          <label>Nom de l’entreprise</label>
+          <input
+            value={entreprise.nom || ""}
+            onChange={(e) => setField("nom", e.target.value)}
+          />
 
-              <label>Adresse</label>
-              <input
-                value={entreprise.address || ""}
-                onChange={(e) => setField("address", e.target.value)}
-              />
+          <label>Adresse</label>
+          <input
+            value={entreprise.adresse || ""}
+            onChange={(e) => setField("adresse", e.target.value)}
+          />
 
-              <label>Code postal</label>
-              <input
-                value={entreprise.zip || ""}
-                onChange={(e) => setField("zip", e.target.value)}
-              />
+          <label>Code postal</label>
+          <input
+            value={entreprise.codePostal || ""}
+            onChange={(e) => setField("codePostal", e.target.value)}
+          />
 
-              <label>Ville</label>
-              <input
-                value={entreprise.city || ""}
-                onChange={(e) => setField("city", e.target.value)}
-              />
+          <label>Ville</label>
+          <input
+            value={entreprise.ville || ""}
+            onChange={(e) => setField("ville", e.target.value)}
+          />
 
-              <label>Secteur</label>
-              <select
-                value={entreprise.sector || ""}
-                onChange={(e) => setField("sector", e.target.value)}
-              >
-                <option value="">-- Choisir un secteur --</option>
+          <label>Secteur</label>
+          <select
+            value={entreprise.secteur || ""}
+            onChange={(e) => setField("secteur", e.target.value)}
+          >
+            <option value="">-- Choisir un secteur --</option>
 
-                {Object.entries(SECTEURS).map(([categorie, sousSecteurs]) => (
-                  <optgroup key={categorie} label={categorie}>
-                    {sousSecteurs.map((nom) => (
-                      <option key={`${categorie}-${nom}`} value={nom}>
-                        {nom}
-                      </option>
-                    ))}
-                  </optgroup>
+            {Object.entries(SECTEURS).map(([categorie, sousSecteurs]) => (
+              <optgroup key={categorie} label={categorie}>
+                {sousSecteurs.map((nom) => (
+                  <option key={`${categorie}-${nom}`} value={nom}>
+                    {nom}
+                  </option>
                 ))}
-              </select>
-            </div>
+              </optgroup>
+            ))}
+          </select>
+        </div>
 
-            {/* ----------- COLONNE 2 ----------- */}
-            <div>
-              <label>Site web</label>
-              <div className="row">
-                <input
-                  value={entreprise.website || ""}
-                  onChange={(e) => setField("website", e.target.value)}
-                />
-                <button
-                  className="btn small"
-                  onClick={() => openURL(entreprise.website)}
-                >
-                  Ouvrir
-                </button>
-              </div>
-
-              <label>Distance (km)</label>
-              <input
-                value={entreprise.distance || ""}
-                onChange={(e) => setField("distance", e.target.value)}
-              />
-
-              <label>Notes</label>
-              <textarea
-                value={entreprise.notes || ""}
-                onChange={(e) => setField("notes", e.target.value)}
-                rows={6}
-              />
-            </div>
-
+        {/* ----------- COLONNE 2 ----------- */}
+        <div>
+          <label>Site web</label>
+          <div className="row">
+            <input
+              value={entreprise.site || ""}
+              onChange={(e) => setField("site", e.target.value)}
+            />
+            <button
+              className="btn small"
+              onClick={() => openURL(entreprise.site)}
+            >
+              Ouvrir
+            </button>
           </div>
+
+          <label>Distance (km)</label>
+          <input
+            value={entreprise.distance || ""}
+            onChange={(e) => setField("distance", e.target.value)}
+          />
+
+          <label>Notes</label>
+          <textarea
+            value={entreprise.notes || ""}
+            onChange={(e) => setField("notes", e.target.value)}
+            rows={6}
+          />
         </div>
 
-        <div className="card-footer row">
-          <button className="btn" onClick={handleNew}>Nouveau</button>
-          <button className="btn cta" onClick={handleSave}>Enregistrer</button>
-        </div>
       </div>
-    </section>
+    </div>
+
+    <div className="card-footer row">
+      <button className="btn" onClick={handleNew}>Nouveau</button>
+      <button className="btn cta" onClick={handleSave}>Enregistrer</button>
+    </div>
+  </div>
+</section>
+   
 
 {/* ------------ COLONNE DROITE BASSE : CONTACTS ------------ */}
     <section className="right-under">
