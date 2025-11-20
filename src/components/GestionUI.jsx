@@ -129,6 +129,11 @@ function LoginScreen({ users, onLogin, onCreateFirstUser, onRegisterRequest }) {
         <h1 style={{ margin: 0, marginBottom: 8, fontSize: 26 }}>
           BORDE TA VOILE
         </h1>
+        <img
+          src="./build/logo.png"
+          alt="Voilier BORDE TA VOILE"
+          className="login-boat"
+        />
         <p style={{ margin: 0, marginBottom: 18, opacity: 0.9 }}>
           Tableau de bord prospection — accès sécurisé
         </p>

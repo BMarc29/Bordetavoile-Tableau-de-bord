@@ -1,18 +1,31 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
 
 :root{
-  --bg-main:  #3F6070;
-  --bg-card:  #4F6F80;
-  --ink:      #EAF2F5;
-  --muted:    #C7D9E0;
-  --line:     rgba(255,255,255,0.10);
-  --acc:      #8FC5D0;
-  --acc-2:    #A6D6DF;
+  /* Fond général : bleu profond, type coque */
+  --bg-main:  #043064;
+
+  /* Cartes : bleu un peu plus clair */
+  --bg-card:  #06447F;
+
+  /* Texte */
+  --ink:      #F6FAFF;
+  --muted:    #C3D7F2;
+
+  /* Traits / bordures */
+  --line:     rgba(255,255,255,0.12);
+
+  /* Accent : bleu clair des voiles */
+  --acc:      #00A8FF;
+  --acc-2:    #35C3FF;
+
+  /* Rouge pour les erreurs */
   --danger:   #D56B6B;
+
   --radius-lg: 18px;
   --radius-sm: 10px;
-  --shadow: 0 8px 24px rgba(0,0,0,0.22);
+  --shadow: 0 8px 24px rgba(0,0,0,0.35);
 }
+
 *{ box-sizing:border-box; } html,body{ height:100%; }
 body{
   margin:0; font-family:'Poppins',system-ui,-apple-system,Segoe UI,Roboto,sans-serif; color:var(--ink);
@@ -23,13 +36,21 @@ body{
   line-height:1.52;
 }
 
-/* Header */
 .header-bar{
-  position:sticky; top:0; z-index:10; display:flex; align-items:center; justify-content:space-between; gap:16px;
-  padding:14px 18px; border-bottom:1px solid var(--line);
-  background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+  position:sticky;
+  top:0;
+  z-index:10;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  padding:14px 18px;
+  border-bottom:1px solid var(--line);
+
+  background: linear-gradient(90deg, #043064, #0059B3);
   backdrop-filter: blur(8px);
 }
+
 .brand{ display:flex; align-items:center; gap:12px; }
 .brand-text{ display:grid; line-height:1.15; }
 .brand-title{ font-weight:600; letter-spacing:.4px; }
