@@ -2187,12 +2187,32 @@ if (isMobileScreen) {
 
     <div className="card-body">
       {/* Résumé + stats */}
-      <div className="resume-row">
+            <div className="resume-row">
         <div className="badges">
           <span className="badge pill">Relances : {resume.Relance}</span>
           <span className="badge pill">RDV : {resume.RendezVous}</span>
           <span className="badge pill">Devis : {resume.Devis}</span>
           <span className="badge pill">Événements : {resume.Evenement}</span>
+        </div>
+
+        <div className="progress-wrap">
+          <div>
+            <div className="small">Avancement du statut</div>
+            <div className="progress-bar">
+              <div
+                className="progress-fill"
+                style={{
+                  width:
+                    STAT_PROGRESS(
+                      entreprise.statut || "En prospection"
+                    ) + "%"
+                }}
+              />
+            </div>
+          </div>
+          <span className="small">
+            {STAT_PROGRESS(entreprise.statut || "En prospection")}%
+          </span>
         </div>
       </div>
 
@@ -2278,22 +2298,126 @@ if (isMobileScreen) {
 
       {/* Historique */}
       <h3 className="mt16">Historique des actions</h3>
-      <div className="timeline">
-        {(entreprise.activities || [])
-          .slice()
-          .reverse()
-          .map((a) => (
-            <div key={a.id} className="tl-item">
-              <div className="tl-date">{a.dateISO?.slice(0, 10) || "?"}</div>
-              <div className="tl-main">
-                <strong>{a.type}</strong> via {a.subType}
+
+      {/* Filtres timeline */}
+      <div className="tl-controls">
+        <select
+          value={tlFilterType}
+          onChange={(e) => setTlFilterType(e.target.value)}
+        >
+          <option value="">Tous les types</option>
+          <option value="Relance">Relances</option>
+          <option value="Rendez-vous">Rendez-vous</option>
+          <option value="Envoi">Envois</option>
+          <option value="Événement">Événements</option>
+          <option value="Autre">Autres</option>
+        </select>
+
+        <select
+          value={tlFilterResult}
+          onChange={(e) => setTlFilterResult(e.target.value)}
+        >
+          <option value="">Tous les résultats</option>
+          <option value="OK">OK</option>
+          <option value="NR">NR</option>
+          <option value="Refus">Refus</option>
+          <option value="En attente">En attente</option>
+        </select>
+
+        <label>
+          <input
+            type="checkbox"
+            checked={tlHideOld}
+            onChange={(e) => setTlHideOld(e.target.checked)}
+          />{" "}
+          Masquer &gt; 90 jours
+        </label>
+
+        <button
+          type="button"
+          className="btn small"
+          onClick={() =>
+            setTlOrder(tlOrder === "desc" ? "asc" : "desc")
+          }
+        >
+          {tlOrder === "desc"
+            ? "Plus récentes d’abord"
+            : "Plus anciennes d’abord"}
+        </button>
+
+        <button
+          type="button"
+          className="btn small"
+          onClick={() => setTlCondensed(!tlCondensed)}
+        >
+          {tlCondensed ? "Voir les notes" : "Vue compacte"}
+        </button>
+      </div>
+
+      {/* Timeline horizontale */}
+      <div className={"timeline-h" + (tlCondensed ? " condensed" : "")}>
+        <ul className="timeline-h-list">
+          {filteredTimeline.map((a) => {
+            const typeClass =
+              a.type === "Relance"
+                ? "t-relance"
+                : a.type === "Rendez-vous"
+                ? "t-rendez-vous"
+                : a.type === "Envoi" && a.subType === "Devis"
+                ? "t-envoi"
+                : a.type === "Événement"
+                ? "t-evenement"
+                : "t-autre";
+
+            const res = (a.result || "").toLowerCase();
+            const resultClass =
+              res === "ok"
+                ? "result-ok"
+                : res === "nr"
+                ? "result-nr"
+                : res === "refus"
+                ? "result-refus"
+                : res === "en attente"
+                ? "result-en-attente"
+                : "";
+
+            return (
+              <li key={a.id} className={`timeline-card ${typeClass}`}>
+                <div className="tl-header">
+                  <div>
+                    <div className="tl-type">
+                      {a.type}
+                      {a.subType ? ` · ${a.subType}` : ""}
+                    </div>
+                    <div className="tl-date">
+                      {a.dateISO ? a.dateISO.slice(0, 10) : ""}
+                    </div>
+                  </div>
+                  <span className={`badge pill ${resultClass}`}>
+                    {a.result || "En cours"}
+                  </span>
+                </div>
+
                 {a.note && <div className="tl-note">{a.note}</div>}
-              </div>
-            </div>
-          ))}
-        {!(entreprise.activities || []).length && (
-          <div>Aucune action pour l’instant.</div>
-        )}
+
+                <div className="mt8">
+                  <button
+                    type="button"
+                    className="btn small danger"
+                    onClick={() => deleteActivity(a.id)}
+                  >
+                    Supprimer
+                  </button>
+                </div>
+              </li>
+            );
+          })}
+          {!filteredTimeline.length && (
+            <li className="timeline-card">
+              Aucune action pour l’instant.
+            </li>
+          )}
+        </ul>
       </div>
     </div>
   </div>
