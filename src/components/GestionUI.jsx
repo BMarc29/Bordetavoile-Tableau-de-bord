@@ -2263,6 +2263,123 @@ if (isMobileScreen) {
       </div>
     </section>
 
+                    {/* ------------ BLOC BAS : LISTE DES ENTREPRISES ------------ */}
+    <section className="bottom">
+      <div className="card">
+        <div className="card-header row space-between">
+          <h2 className="card-title">Entreprises</h2>
+          <div className="row gap8">
+            <button className="btn small" onClick={createEntreprise}>Nouveau</button>
+            <button className="btn small" onClick={exportCSV}>Exporter CSV</button>
+          </div>
+        </div>
+
+        <div className="card-body">
+          {/* Filtres */}
+          <div className="row gap8 wrap mb12">
+            <select
+              value={filterCat}
+              onChange={(e) => setFilterCat(e.target.value)}
+            >
+              <option value="">Toutes les catégories</option>
+              {Object.keys(ACTIONS).map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+
+            <select
+              value={filterSub}
+              onChange={(e) => setFilterSub(e.target.value)}
+              disabled={!filterCat}
+            >
+              <option value="">Toutes les actions</option>
+              {filterCat && (ACTIONS[filterCat] || []).map((sub) => (
+                <option key={sub} value={sub}>{sub}</option>
+              ))}
+            </select>
+
+            <select
+              value={filterTaille}
+              onChange={(e) => setFilterTaille(e.target.value)}
+            >
+              <option value="">Toutes les tailles</option>
+              <option value="MIC">MIC</option>
+              <option value="PME">PME</option>
+              <option value="ETI">ETI</option>
+              <option value="GE">GE</option>
+            </select>
+
+            <label className="chk-inline">
+              <input
+                type="checkbox"
+                checked={filterThisWeek}
+                onChange={(e) => setFilterThisWeek(e.target.checked)}
+              />
+              À relancer cette semaine
+            </label>
+          </div>
+
+          {/* Tableau des entreprises */}
+          <div className="table-wrapper">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Nom</th>
+                  <th>Ville</th>
+                  <th>Secteur</th>
+                  <th>Taille</th>
+                  <th>Prochaine action</th>
+                  <th>Prochaine date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredEntreprises.map((e) => (
+                  <tr
+                    key={e.id}
+                    className={
+                      e.id === entreprise.id
+                        ? "selected"
+                        : isOverdue(e)
+                          ? "overdue"
+                          : isDueToday(e)
+                            ? "today"
+                            : ""
+                    }
+                    onClick={() => selectEntreprise(e.id)}
+                  >
+                    <td>{e.nom || "(Sans nom)"}</td>
+                    <td>{e.ville || ""}</td>
+                    <td>{e.secteur || ""}</td>
+                    <td>{e.taille || ""}</td>
+                    <td>{e.prochaineAction || ""}</td>
+                    <td>{e.dateProchaine || ""}</td>
+                    <td>
+                      <button
+                        className="btn small danger"
+                        onClick={(ev) => {
+                          ev.stopPropagation();
+                          deleteEntreprise(e.id);
+                        }}
+                      >
+                        Supprimer
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+
+                {filteredEntreprises.length === 0 && (
+                  <tr>
+                    <td colSpan={7}>Aucune entreprise pour ces filtres.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
     {/* ------------ TOAST ------------ */}
     {toast && <div className="toast">{toast}</div>}
   </div>
