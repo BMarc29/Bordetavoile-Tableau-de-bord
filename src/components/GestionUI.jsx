@@ -2253,15 +2253,65 @@ if (isMobileScreen) {
             onChange={(e) => setField("last_action_date", e.target.value)}
           />
 
-          <label>Prochaine relance</label>
+                    <label>Prochaine relance</label>
           <input
             type="date"
             value={entreprise.next_follow || ""}
             onChange={(e) => setField("next_follow", e.target.value)}
           />
+
+          {/* --- Journal de bord : moyens + types --- */}
+          <h3 className="mt16">Journal de bord</h3>
+          <p className="hint">
+            Choisis un moyen de contact et un type d’action, puis clique sur
+            « Ajouter au journal ».
+          </p>
+
+          {/* Moyens : Courrier / Mail / Téléphone / ... */}
+          <div className="chips-row">
+            {JB_CHANNELS.map((ch) => (
+              <button
+                key={ch}
+                type="button"
+                className={
+                  "chip" + (jbChannel === ch ? " chip-active" : "")
+                }
+                onClick={() => setJbChannel(ch)}
+              >
+                {ch}
+              </button>
+            ))}
+          </div>
+
+          {/* Types : Envoi / Relance / Suivi / Info */}
+          <div className="chips-row mt8">
+            {JB_ACTIONS.map((act) => (
+              <button
+                key={act}
+                type="button"
+                className={
+                  "chip" + (jbAction === act ? " chip-active" : "")
+                }
+                onClick={() => setJbAction(act)}
+              >
+                {act}
+              </button>
+            ))}
+          </div>
+
+          <div className="mt8">
+            <button
+              type="button"
+              className="btn small"
+              onClick={fireJournalEntry}
+            >
+              Ajouter au journal
+            </button>
+          </div>
         </div>
       </div>
     </section>
+
 
           {/* Journal de bord : choix rapide du moyen + type */}
       <h3 className="mt16">Journal de bord</h3>
