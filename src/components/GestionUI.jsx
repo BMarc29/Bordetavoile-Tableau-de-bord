@@ -2374,7 +2374,7 @@ if (isMobileScreen) {
       </div>
 
       {/* Timeline horizontale */}
-      <div className={"timeline-h" + (tlCondensed ? " condensed" : "")}>
+      <div className="timeline-h">
         <ul className="timeline-h-list">
           {filteredTimeline.map((a) => {
             const typeClass =
@@ -2418,19 +2418,10 @@ if (isMobileScreen) {
                 </div>
 
                 {a.note && <div className="tl-note">{a.note}</div>}
-
-                <div className="mt8">
-                  <button
-                    type="button"
-                    className="btn small danger"
-                    onClick={() => deleteActivity(a.id)}
-                  >
-                    Supprimer
-                  </button>
-                </div>
               </li>
             );
           })}
+
           {!filteredTimeline.length && (
             <li className="timeline-card">
               Aucune action pour l’instant.
@@ -2439,7 +2430,7 @@ if (isMobileScreen) {
         </ul>
       </div>
     </div>
-  </div>
+ </div>
 </section>
 
           {/* Journal de bord : choix rapide du moyen + type */}
