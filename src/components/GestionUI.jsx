@@ -2263,6 +2263,50 @@ if (isMobileScreen) {
       </div>
     </section>
 
+          {/* Journal de bord : choix rapide du moyen + type */}
+      <h3 className="mt16">Journal de bord</h3>
+
+      <div className="chips-row">
+        {JB_CHANNELS.map((ch) => (
+          <button
+            key={ch}
+            type="button"
+            className={
+              "chip" + (jbChannel === ch ? " chip-active" : "")
+            }
+            onClick={() => setJbChannel(ch)}
+          >
+            {ch}
+          </button>
+        ))}
+      </div>
+
+      <div className="chips-row mt8">
+        {JB_ACTIONS.map((act) => (
+          <button
+            key={act}
+            type="button"
+            className={
+              "chip" + (jbAction === act ? " chip-active" : "")
+            }
+            onClick={() => setJbAction(act)}
+          >
+            {act}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt8">
+        <button
+          type="button"
+          className="btn small"
+          onClick={fireJournalEntry}
+        >
+          Ajouter au journal
+        </button>
+      </div>
+
+
                     {/* ------------ BLOC BAS : LISTE DES ENTREPRISES ------------ */}
     <section className="bottom">
       <div className="card">
